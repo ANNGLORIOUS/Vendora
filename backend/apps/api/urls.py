@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
+from apps.customers.views_account import account_summary
 
 router = routers.DefaultRouter()
 router.register(r'businesses', BusinessViewSet)
@@ -21,4 +22,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('customers/<int:customer_id>/account/', account_summary, name='customer-account'),
 ]

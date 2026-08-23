@@ -7,6 +7,7 @@ class Payment(models.Model):
     customer = models.ForeignKey('customers.Customer', on_delete=models.CASCADE, related_name='payments')
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     method = models.CharField(max_length=50, default='cash')
+    reference = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
