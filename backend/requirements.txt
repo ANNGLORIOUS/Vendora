@@ -4,3 +4,10 @@ psycopg2-binary>=2.9.5
 django-cors-headers>=4.0.0
 djangorestframework-simplejwt>=2.8.0
 python-dotenv>=1.0.0
+redis>=4.6.0
+celery>=5.5.0
+django-celery-beat>=2.4.0
+africastalking==2.0.3
+
+# dev extras
+django-environ>=0.10.0

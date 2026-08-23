@@ -23,6 +23,12 @@ INSTALLED_APPS = [
     'apps.products',
     'apps.orders',
     'apps.payments',
+        'apps.communications',
+        'apps.suppliers',
+        'apps.purchases',
+        'apps.expenses',
+        'apps.inventory',
+        'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -98,3 +104,21 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = 'accounts.User'
 
 CORS_ALLOW_ALL_ORIGINS = True
+
+# Celery settings
+CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', os.getenv('REDIS_URL', 'redis://localhost:6379/0'))
+CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', CELERY_BROKER_URL)
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# Simple periodic schedule: run overdue reminders once daily
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'daily-overdue-reminders': {
+        'task': 'apps.communications.tasks.find_and_remind_overdue_customers',
+        'schedule': crontab(hour=8, minute=0),
+    },
+}
+
+# Africa's Talking settings (optional)
+AFRICASTALKING_USERNAME = os.getenv('AFRICASTALKING_USERNAME', '')
+AFRICASTALKING_APIKEY = os.getenv('AFRICASTALKING_APIKEY', '')

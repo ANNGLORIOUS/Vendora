@@ -10,6 +10,10 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from apps.customers.views_account import account_summary
+from apps.suppliers.views import SupplierViewSet
+from apps.purchases.views import CowPurchaseViewSet
+from apps.expenses.views import ExpenseViewSet
+from apps.inventory.views import InventoryItemViewSet, InventoryMovementViewSet
 
 router = routers.DefaultRouter()
 router.register(r'businesses', BusinessViewSet)
@@ -17,6 +21,11 @@ router.register(r'customers', CustomerViewSet, basename='customer')
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'payments', PaymentViewSet, basename='payment')
+router.register(r'suppliers', SupplierViewSet, basename='supplier')
+router.register(r'purchases', CowPurchaseViewSet, basename='purchase')
+router.register(r'expenses', ExpenseViewSet, basename='expense')
+router.register(r'inventory/items', InventoryItemViewSet, basename='inventoryitem')
+router.register(r'inventory/movements', InventoryMovementViewSet, basename='inventorymovement')
 
 urlpatterns = [
     path('', include(router.urls)),
