@@ -17,6 +17,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'apps.accounts',
+    'apps.businesses',
+    'apps.customers',
+    'apps.products',
+    'apps.orders',
+    'apps.payments',
 ]
 
 MIDDLEWARE = [
@@ -50,16 +56,25 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'vendora.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', 'vendora_db'),
-        'USER': os.environ.get('POSTGRES_USER', 'vendora'),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+# Database config: prefer Postgres when explicitly configured, otherwise fall back to SQLite for local development.
+if os.environ.get('USE_SQLITE', '1') == '1':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('POSTGRES_DB', 'vendora_db'),
+            'USER': os.environ.get('POSTGRES_USER', 'vendora'),
+            'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+            'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+            'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = []
 
@@ -75,5 +90,8 @@ REST_FRAMEWORK = {
         'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+# Custom user model
+AUTH_USER_MODEL = 'accounts.User'
 
 CORS_ALLOW_ALL_ORIGINS = True
