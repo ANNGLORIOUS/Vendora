@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Fayorganiks logo">
+  <rect width="128" height="128" rx="32" fill="#fffdfa"/>
+  <path d="M64 20c-15 0-27 12-27 27 0 10 5 18 12 23l-10 20h18l6-12 6 12h18l-10-20c7-5 12-13 12-23 0-15-12-27-27-27Z" fill="#4a1737"/>
+  <path d="M64 34c-7 0-13 6-13 13 0 4 2 8 5 10l-4 9h24l-4-9c3-2 5-6 5-10 0-7-6-13-13-13Z" fill="#f4ebea"/>
+  <path d="M52 56h24" stroke="#7a3457" stroke-width="4" stroke-linecap="round"/>
+  <path d="M58 72h12" stroke="#a46b84" stroke-width="4" stroke-linecap="round"/>
+</svg>
