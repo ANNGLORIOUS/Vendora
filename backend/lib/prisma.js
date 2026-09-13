@@ -11,7 +11,11 @@ if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5434/skybee?schema=public'
 }
 
-const { PrismaClient } = await import('@prisma/client')
-const prisma = new PrismaClient()
+import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+
+const connectionString = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5434/skybee?schema=public'
+const adapter = new PrismaPg({ connectionString })
+const prisma = new PrismaClient({ adapter })
 
 export default prisma

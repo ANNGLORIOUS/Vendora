@@ -7,6 +7,7 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import pg from 'pg'
 import jwt from 'jsonwebtoken'
+import prisma from './lib/prisma.js'
 
 dotenv.config()
 
@@ -277,6 +278,110 @@ let expenses = fallbackExpenses.map((expense) => ({ ...expense }))
 let smsLogs = fallbackSmsLogs.map((log) => ({ ...log }))
 let settings = { ...fallbackSettings }
 
+const seedVendoraDefaults = async () => {
+  try {
+    await Promise.all([
+      prisma.adminUser.upsert({
+        where: { email: 'admin@vendora.co' },
+        update: { name: 'Vendora Admin', password: 'admin123' },
+        create: { email: 'admin@vendora.co', password: 'admin123', name: 'Vendora Admin' },
+      }),
+      prisma.adminUser.upsert({
+        where: { email: 'admin@skybee.co' },
+        update: { name: 'Vendora Admin', password: 'admin123' },
+        create: { email: 'admin@skybee.co', password: 'admin123', name: 'Vendora Admin' },
+      }),
+    ])
+
+    const customerCount = await prisma.customer.count()
+    if (customerCount === 0) {
+      await prisma.customer.createMany({
+        data: fallbackCustomers.map((customer) => ({
+          name: customer.name,
+          contactPerson: customer.contactPerson || null,
+          phone: customer.phone,
+          location: customer.location || null,
+          status: customer.status || 'Active',
+          totalOrders: Number(customer.totalOrders || 0),
+          totalPaid: Number(customer.totalPaid || 0),
+          outstandingBalance: Number(customer.outstandingBalance || 0),
+        })),
+      })
+    }
+
+    const orderCount = await prisma.order.count()
+    if (orderCount === 0) {
+      const dbCustomers = await prisma.customer.findMany()
+      const customerLookup = new Map(dbCustomers.map((customer) => [customer.name, customer.id]))
+
+      await prisma.order.createMany({
+        data: fallbackOrders.map((order) => ({
+          customerId: customerLookup.get(order.customerName) ?? null,
+          customerName: order.customerName,
+          contactPerson: order.contactPerson || null,
+          meatType: order.meatType,
+          quantity: Number(order.quantity || 0),
+          unitPrice: Number(order.unitPrice || 0),
+          totalAmount: Number(order.totalAmount || 0),
+          amountPaid: Number(order.amountPaid || 0),
+          balance: Number(order.balance || 0),
+          paymentStatus: order.paymentStatus || 'Outstanding',
+          orderStatus: order.orderStatus || 'Pending',
+          notes: order.notes || '',
+          orderDate: new Date(order.orderDate || Date.now()),
+        })),
+      })
+    }
+
+    const paymentCount = await prisma.payment.count()
+    if (paymentCount === 0) {
+      const orderLookup = new Map((await prisma.order.findMany()).map((order) => [order.customerName, order.id]))
+      await prisma.payment.createMany({
+        data: fallbackPayments.map((payment) => ({
+          orderId: orderLookup.get(payment.customerName) ?? 1,
+          customerName: payment.customerName,
+          amount: Number(payment.amount || 0),
+          paymentDate: new Date(payment.paymentDate || Date.now()),
+          method: payment.method || 'Mpesa',
+          notes: payment.notes || '',
+        })),
+      })
+    }
+
+    const cowPurchaseCount = await prisma.cowPurchase.count()
+    if (cowPurchaseCount === 0) {
+      await prisma.cowPurchase.createMany({
+        data: fallbackCowPurchases.map((purchase) => ({
+          purchaseDate: new Date(purchase.purchaseDate || Date.now()),
+          seller: purchase.seller,
+          cowCount: Number(purchase.cowCount || 0),
+          purchasePrice: Number(purchase.purchasePrice || 0),
+          totalCost: Number(purchase.totalCost || 0),
+          weightKg: Number(purchase.weightKg || 0),
+          notes: purchase.notes || '',
+        })),
+      })
+    }
+
+    const settingsCount = await prisma.businessSetting.count()
+    if (settingsCount === 0) {
+      await prisma.businessSetting.create({
+        data: {
+          businessName: fallbackSettings.businessName,
+          businessEmail: fallbackSettings.businessEmail,
+          businessPhone: fallbackSettings.businessPhone,
+          businessAddress: fallbackSettings.businessAddress,
+          defaultCurrency: fallbackSettings.defaultCurrency,
+          reminderThresholdDays: Number(fallbackSettings.reminderThresholdDays || 7),
+          invoicePrefix: fallbackSettings.invoicePrefix,
+        },
+      })
+    }
+  } catch (error) {
+    console.warn('Vendora default database seeding failed:', error.message)
+  }
+}
+
 const addCustomer = (customer) => {
   const normalizedCustomer = {
     id: Date.now(),
@@ -354,6 +459,7 @@ const ensureCatalogData = async () => {
   }
 }
 
+await seedVendoraDefaults()
 await ensureCatalogData()
 
 app.get('/api/health', (_req, res) => {
@@ -374,22 +480,28 @@ app.get('/api/auth/me', requireAuth, requireAdmin, (req, res) => {
 
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body
+  const normalizedEmail = String(email || '').trim().toLowerCase()
 
   try {
-    const adminResult = await dbPool.query('SELECT * FROM "AdminUser" WHERE email = $1 AND password = $2 LIMIT 1', [email, password])
-    if (adminResult.rows[0]) {
-      const admin = adminResult.rows[0]
-      const token = generateToken({ id: admin.id, email: admin.email, name: admin.name })
-      return res.json({ success: true, token, admin: { id: admin.id, email: admin.email, name: admin.name, role: 'admin' } })
+    const adminResult = await prisma.adminUser.findFirst({
+      where: {
+        email: normalizedEmail,
+      },
+    })
+
+    if (adminResult && adminResult.password === String(password || '')) {
+      const admin = { id: adminResult.id, email: adminResult.email, name: adminResult.name }
+      const token = generateToken(admin)
+      return res.json({ success: true, token, admin: { ...admin, role: 'admin' } })
     }
   } catch (error) {
     console.warn('Auth lookup failed, using fallback login:', error.message)
   }
 
-  if (email && password) {
-    const validEmail = email.toLowerCase() === 'admin@vendora.co' || email.toLowerCase() === 'admin@skybee.co'
+  if (normalizedEmail && password) {
+    const validEmail = normalizedEmail === 'admin@vendora.co' || normalizedEmail === 'admin@skybee.co'
     if (validEmail && password === 'admin123') {
-      const admin = { id: 1, email: email.toLowerCase(), name: 'Vendora Admin' }
+      const admin = { id: 1, email: normalizedEmail, name: 'Vendora Admin' }
       const token = generateToken(admin)
       return res.json({ success: true, token, admin: { ...admin, role: 'admin' } })
     }
@@ -510,8 +622,10 @@ app.delete('/api/products/:id', async (req, res) => {
 
 app.get('/api/orders', async (_req, res) => {
   try {
-    const result = await dbPool.query('SELECT * FROM "Order" ORDER BY "createdAt" DESC')
-    return res.json(result.rows)
+    const result = await prisma.order.findMany({
+      orderBy: { createdAt: 'desc' },
+    })
+    return res.json(result)
   } catch (error) {
     console.warn('Order lookup failed, using fallback data:', error.message)
     return res.json(orders)
@@ -544,15 +658,37 @@ app.post('/api/orders', async (req, res) => {
     orderDate: new Date().toISOString(),
   }
 
-  orders = [order, ...orders]
+  try {
+    const savedOrder = await prisma.order.create({
+      data: {
+        customerId: customerId ? Number(customerId) : null,
+        customerName: order.customerName,
+        meatType: order.meatType,
+        quantity: order.quantity,
+        unitPrice: order.unitPrice,
+        totalAmount: order.totalAmount,
+        amountPaid: order.amountPaid,
+        balance: order.balance,
+        paymentStatus: order.paymentStatus,
+        orderStatus: order.orderStatus,
+        notes: order.notes,
+        orderDate: new Date(order.orderDate),
+      },
+    })
+    orders = [order, ...orders]
 
-  const customer = customers.find((entry) => entry.id === Number(customerId))
-  if (customer) {
-    customer.totalOrders = (customer.totalOrders || 0) + 1
-    customer.outstandingBalance = Number(customer.outstandingBalance || 0) + balance
+    const customer = customers.find((entry) => entry.id === Number(customerId))
+    if (customer) {
+      customer.totalOrders = (customer.totalOrders || 0) + 1
+      customer.outstandingBalance = Number(customer.outstandingBalance || 0) + balance
+    }
+
+    return res.status(201).json(savedOrder)
+  } catch (error) {
+    console.warn('Order create failed, using fallback data:', error.message)
+    orders = [order, ...orders]
+    return res.status(201).json(order)
   }
-
-  return res.status(201).json(order)
 })
 
 app.get('/api/categories', async (_req, res) => {
@@ -634,11 +770,17 @@ app.delete('/api/discounts/:id', (req, res) => {
   res.json({ success: true })
 })
 
-app.get('/api/customers', requireAuth, requireAdmin, (_req, res) => {
-  res.json(customers)
+app.get('/api/customers', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const rows = await prisma.customer.findMany({ orderBy: { createdAt: 'desc' } })
+    return res.json(rows)
+  } catch (error) {
+    console.warn('Customer lookup failed, using fallback data:', error.message)
+    return res.json(customers)
+  }
 })
 
-app.post('/api/customers', requireAuth, requireAdmin, (req, res) => {
+app.post('/api/customers', requireAuth, requireAdmin, async (req, res) => {
   const { name, contactPerson, phone, location, status } = req.body
 
   const customer = {
@@ -653,8 +795,26 @@ app.post('/api/customers', requireAuth, requireAdmin, (req, res) => {
     outstandingBalance: 0,
   }
 
-  customers = [customer, ...customers]
-  res.status(201).json(customer)
+  try {
+    const savedCustomer = await prisma.customer.create({
+      data: {
+        name: customer.name,
+        contactPerson: customer.contactPerson || null,
+        phone: customer.phone,
+        location: customer.location || null,
+        status: customer.status || 'Active',
+        totalOrders: Number(customer.totalOrders || 0),
+        totalPaid: Number(customer.totalPaid || 0),
+        outstandingBalance: Number(customer.outstandingBalance || 0),
+      },
+    })
+    customers = [customer, ...customers]
+    return res.status(201).json(savedCustomer)
+  } catch (error) {
+    console.warn('Customer create failed, using fallback data:', error.message)
+    customers = [customer, ...customers]
+    return res.status(201).json(customer)
+  }
 })
 
 app.put('/api/customers/:id', requireAuth, requireAdmin, (req, res) => {
@@ -726,11 +886,17 @@ app.put('/api/orders/:id/status', requireAuth, requireAdmin, async (req, res) =>
   return res.json(order)
 })
 
-app.get('/api/payments', requireAuth, requireAdmin, (_req, res) => {
-  res.json(payments)
+app.get('/api/payments', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const rows = await prisma.payment.findMany({ orderBy: { createdAt: 'desc' } })
+    return res.json(rows)
+  } catch (error) {
+    console.warn('Payment lookup failed, using fallback data:', error.message)
+    return res.json(payments)
+  }
 })
 
-app.post('/api/payments', requireAuth, requireAdmin, (req, res) => {
+app.post('/api/payments', requireAuth, requireAdmin, async (req, res) => {
   const { orderId, customerName, amount, paymentDate, method, notes } = req.body
   const payment = {
     id: Date.now(),
@@ -742,29 +908,76 @@ app.post('/api/payments', requireAuth, requireAdmin, (req, res) => {
     notes: notes || '',
   }
 
-  payments = [payment, ...payments]
+  try {
+    const order = await prisma.order.findUnique({ where: { id: Number(orderId) } })
+    if (order) {
+      const newAmountPaid = Number(order.amountPaid || 0) + Number(payment.amount || 0)
+      const newBalance = Math.max(0, Number(order.totalAmount || 0) - newAmountPaid)
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          amountPaid: newAmountPaid,
+          balance: newBalance,
+          paymentStatus: newBalance === 0 ? 'Paid' : newAmountPaid > 0 ? 'Partially Paid' : 'Outstanding',
+        },
+      })
+    }
 
-  const order = orders.find((entry) => entry.id === Number(orderId))
-  if (order) {
-    order.amountPaid = Number(order.amountPaid || 0) + Number(amount || 0)
-    order.balance = Math.max(0, Number(order.totalAmount || 0) - order.amountPaid)
-    order.paymentStatus = order.amountPaid >= Number(order.totalAmount || 0) ? 'Paid' : order.amountPaid > 0 ? 'Partially Paid' : 'Outstanding'
+    const customer = await prisma.customer.findFirst({ where: { name: payment.customerName } })
+    if (customer) {
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          totalPaid: Number(customer.totalPaid || 0) + Number(payment.amount || 0),
+          outstandingBalance: Math.max(0, Number(customer.outstandingBalance || 0) - Number(payment.amount || 0)),
+        },
+      })
+    }
+
+    const savedPayment = await prisma.payment.create({
+      data: {
+        orderId: Number(orderId),
+        customerName: payment.customerName,
+        amount: payment.amount,
+        paymentDate: new Date(payment.paymentDate),
+        method: payment.method,
+        notes: payment.notes,
+      },
+    })
+
+    payments = [payment, ...payments]
+    return res.status(201).json(savedPayment)
+  } catch (error) {
+    console.warn('Payment create failed, using fallback data:', error.message)
+    payments = [payment, ...payments]
+    const order = orders.find((entry) => entry.id === Number(orderId))
+    if (order) {
+      order.amountPaid = Number(order.amountPaid || 0) + Number(amount || 0)
+      order.balance = Math.max(0, Number(order.totalAmount || 0) - order.amountPaid)
+      order.paymentStatus = order.amountPaid >= Number(order.totalAmount || 0) ? 'Paid' : order.amountPaid > 0 ? 'Partially Paid' : 'Outstanding'
+    }
+
+    const customer = customers.find((entry) => entry.name === customerName)
+    if (customer) {
+      customer.totalPaid = Number(customer.totalPaid || 0) + Number(amount || 0)
+      customer.outstandingBalance = Math.max(0, Number(customer.outstandingBalance || 0) - Number(amount || 0))
+    }
+
+    return res.status(201).json(payment)
   }
-
-  const customer = customers.find((entry) => entry.name === customerName)
-  if (customer) {
-    customer.totalPaid = Number(customer.totalPaid || 0) + Number(amount || 0)
-    customer.outstandingBalance = Math.max(0, Number(customer.outstandingBalance || 0) - Number(amount || 0))
-  }
-
-  res.status(201).json(payment)
 })
 
-app.get('/api/cow-purchases', requireAuth, requireAdmin, (_req, res) => {
-  res.json(cowPurchases)
+app.get('/api/cow-purchases', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const rows = await prisma.cowPurchase.findMany({ orderBy: { createdAt: 'desc' } })
+    return res.json(rows)
+  } catch (error) {
+    console.warn('Cow purchase lookup failed, using fallback data:', error.message)
+    return res.json(cowPurchases)
+  }
 })
 
-app.post('/api/cow-purchases', requireAuth, requireAdmin, (req, res) => {
+app.post('/api/cow-purchases', requireAuth, requireAdmin, async (req, res) => {
   const { purchaseDate, seller, cowCount, purchasePrice, weightKg, notes } = req.body
   const parsedCowCount = Number(cowCount || 0)
   const parsedPurchasePrice = Number(purchasePrice || 0)
@@ -781,8 +994,25 @@ app.post('/api/cow-purchases', requireAuth, requireAdmin, (req, res) => {
     notes: notes || '',
   }
 
-  cowPurchases = [purchase, ...cowPurchases]
-  res.status(201).json(purchase)
+  try {
+    const savedPurchase = await prisma.cowPurchase.create({
+      data: {
+        purchaseDate: new Date(purchase.purchaseDate),
+        seller: purchase.seller,
+        cowCount: Number(purchase.cowCount || 0),
+        purchasePrice: Number(purchase.purchasePrice || 0),
+        totalCost: Number(purchase.totalCost || 0),
+        weightKg: purchase.weightKg === null || purchase.weightKg === undefined ? null : Number(purchase.weightKg),
+        notes: purchase.notes || '',
+      },
+    })
+    cowPurchases = [purchase, ...cowPurchases]
+    return res.status(201).json(savedPurchase)
+  } catch (error) {
+    console.warn('Cow purchase create failed, using fallback data:', error.message)
+    cowPurchases = [purchase, ...cowPurchases]
+    return res.status(201).json(purchase)
+  }
 })
 
 app.get('/api/suppliers', requireAuth, requireAdmin, (_req, res) => {
@@ -865,13 +1095,62 @@ app.post('/api/sms/reminders/send', requireAuth, requireAdmin, (req, res) => {
   res.status(201).json(log)
 })
 
-app.get('/api/settings', requireAuth, requireAdmin, (_req, res) => {
-  res.json(settings)
+app.get('/api/settings', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const row = await prisma.businessSetting.findFirst({ orderBy: { createdAt: 'desc' } })
+    if (row) {
+      return res.json({
+        id: row.id,
+        businessName: row.businessName,
+        businessEmail: row.businessEmail,
+        businessPhone: row.businessPhone,
+        businessAddress: row.businessAddress,
+        defaultCurrency: row.defaultCurrency,
+        reminderThresholdDays: row.reminderThresholdDays,
+        invoicePrefix: row.invoicePrefix,
+      })
+    }
+    return res.json(settings)
+  } catch (error) {
+    console.warn('Settings lookup failed, using fallback data:', error.message)
+    return res.json(settings)
+  }
 })
 
-app.put('/api/settings', requireAuth, requireAdmin, (req, res) => {
+app.put('/api/settings', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const row = await prisma.businessSetting.findFirst({ orderBy: { createdAt: 'desc' } })
+    if (row) {
+      const updated = await prisma.businessSetting.update({
+        where: { id: row.id },
+        data: {
+          businessName: req.body.businessName || row.businessName,
+          businessEmail: req.body.businessEmail || row.businessEmail,
+          businessPhone: req.body.businessPhone || row.businessPhone,
+          businessAddress: req.body.businessAddress || row.businessAddress,
+          defaultCurrency: req.body.defaultCurrency || row.defaultCurrency,
+          reminderThresholdDays: Number(req.body.reminderThresholdDays ?? row.reminderThresholdDays),
+          invoicePrefix: req.body.invoicePrefix || row.invoicePrefix,
+        },
+      })
+      settings = { ...settings, ...req.body }
+      return res.json({
+        id: updated.id,
+        businessName: updated.businessName,
+        businessEmail: updated.businessEmail,
+        businessPhone: updated.businessPhone,
+        businessAddress: updated.businessAddress,
+        defaultCurrency: updated.defaultCurrency,
+        reminderThresholdDays: updated.reminderThresholdDays,
+        invoicePrefix: updated.invoicePrefix,
+      })
+    }
+  } catch (error) {
+    console.warn('Settings update failed, using fallback data:', error.message)
+  }
+
   settings = { ...settings, ...req.body }
-  res.json(settings)
+  return res.json(settings)
 })
 
 app.listen(PORT, () => {
