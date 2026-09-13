@@ -1,4 +1,4 @@
-import skyLogo from '../assets/skybeelogo.jpeg'
+import vendoraLogo from '../assets/vendora-logo.svg'
 
 function Hero() {
   const highlights = ['Beauty essentials', 'Desk picks', 'Drinkware']
@@ -11,8 +11,8 @@ function Hero() {
             <div className="mx-auto w-full max-w-5xl rounded-4xl border border-black/10 bg-black/5 p-6 shadow-[0_20px_80px_rgba(20,20,20,0.15)] backdrop-blur-sm sm:p-8 lg:p-10">
               <div className="flex flex-col items-center text-center">
                 <img
-                  src={skyLogo}
-                  alt="Skybee logo"
+                  src={vendoraLogo}
+                  alt="Vendora logo"
                   className="w-full max-w-190 object-contain drop-shadow-[0_12px_26px_rgba(0,0,0,0.16)]"
                 />
 

@@ -42,64 +42,159 @@ app.use(cors())
 app.use(express.json())
 app.use('/uploads', express.static(uploadDir))
 
-const defaultCatalogProducts = [
-  { id: 1, name: 'Colognes', category: 'Beauty & Personal Care', price: 2800, stock: 12, discount: 10, image: '/hero-visual.png', description: 'Fresh daily fragrances for confidence and personal style.' },
-  { id: 2, name: 'Skincare Products', category: 'Beauty & Personal Care', price: 3200, stock: 9, discount: 12, image: '/hero-visual.png', description: 'Gentle care essentials for bright, healthy-looking skin.' },
-  { id: 3, name: 'Natural Hair Products', category: 'Beauty & Personal Care', price: 2600, stock: 11, discount: 8, image: '/hero-visual.png', description: 'Hair care favorites designed for nourishment and shine.' },
-  { id: 4, name: 'Notebooks, Journals and Diaries', category: 'Stationery & Desk Essentials', price: 1400, stock: 20, discount: 7, image: '/hero-visual.png', description: 'Planning pages and personal journals for everyday writing.' },
-  { id: 5, name: 'Pens', category: 'Stationery & Desk Essentials', price: 850, stock: 30, discount: 5, image: '/hero-visual.png', description: 'Smooth-writing pens for work, study, and daily notes.' },
-  { id: 6, name: 'Desk Organizers', category: 'Stationery & Desk Essentials', price: 2100, stock: 14, discount: 0, image: '/hero-visual.png', description: 'Neat storage solutions that keep your workspace tidy.' },
-  { id: 7, name: 'Cardholders and Pen Holders', category: 'Stationery & Desk Essentials', price: 1800, stock: 16, discount: 6, image: '/hero-visual.png', description: 'Practical desk pieces for a cleaner, more organized setup.' },
-  { id: 8, name: 'Books (Hardcopy & E-books)', category: 'Stationery & Desk Essentials', price: 2200, stock: 18, discount: 10, image: '/hero-visual.png', description: 'Inspiring reads in print and digital formats for learning and leisure.' },
-  { id: 9, name: 'Water Bottles', category: 'Drinkware', price: 1700, stock: 22, discount: 0, image: '/hero-visual.png', description: 'Reusable bottles that keep you hydrated in style.' },
-  { id: 10, name: 'Mugs (ceramic)', category: 'Drinkware', price: 1500, stock: 19, discount: 8, image: '/hero-visual.png', description: 'Classic ceramic mugs for your coffee, tea, and cozy breaks.' },
-  { id: 11, name: 'Thermal Mugs and Flasks', category: 'Drinkware', price: 2500, stock: 12, discount: 9, image: '/hero-visual.png', description: 'Insulated drinkware for hot and cold beverages on the go.' },
-  { id: 12, name: 'Hip Flasks', category: 'Drinkware', price: 2000, stock: 10, discount: 0, image: '/hero-visual.png', description: 'Compact and portable flasks built for convenience.' },
-  { id: 13, name: 'Flash Disks', category: 'Tech & Gadgets', price: 2400, stock: 13, discount: 5, image: '/hero-visual.png', description: 'Portable storage for work, study, and quick file transfers.' },
-  { id: 14, name: 'Powerbanks', category: 'Tech & Gadgets', price: 3200, stock: 8, discount: 0, image: '/hero-visual.png', description: 'Reliable power backup for your devices while you are on the move.' },
-  { id: 15, name: 'Phone Covers', category: 'Tech & Gadgets', price: 1800, stock: 25, discount: 10, image: '/hero-visual.png', description: 'Protective and stylish cases for everyday phone use.' },
-  { id: 16, name: 'Glasses (Blue light / Sunglasses?)', category: 'Tech & Gadgets', price: 3500, stock: 7, discount: 12, image: '/hero-visual.png', description: 'Everyday eyewear for screen comfort and everyday fashion.' },
-  { id: 17, name: 'Jute Bags', category: 'Bags, Apparel & Everyday Carry', price: 1900, stock: 15, discount: 7, image: '/hero-visual.png', description: 'Eco-friendly carry bags for errands, work, and travel.' },
-  { id: 18, name: 'Key Holders', category: 'Bags, Apparel & Everyday Carry', price: 1200, stock: 21, discount: 5, image: '/hero-visual.png', description: 'Compact everyday carry essentials for quick organization.' },
-  { id: 19, name: 'Jerseys', category: 'Bags, Apparel & Everyday Carry', price: 2400, stock: 17, discount: 8, image: '/hero-visual.png', description: 'Casual apparel for comfort, identity, and everyday wear.' },
-  { id: 20, name: 'Reflectors', category: 'Bags, Apparel & Everyday Carry', price: 1000, stock: 28, discount: 0, image: '/hero-visual.png', description: 'Practical safety accessories for commute and visibility.' },
-  { id: 21, name: 'Flower Bouquets', category: 'Home & Gifting', price: 2600, stock: 9, discount: 10, image: '/hero-visual.png', description: 'Fresh arrangements for thoughtful gifting and celebration.' },
-  { id: 22, name: 'Vases', category: 'Home & Gifting', price: 2300, stock: 11, discount: 6, image: '/hero-visual.png', description: 'Decorative vases to elevate flowers and home styling.' },
+const fallbackCustomers = [
+  {
+    id: 1,
+    name: 'Muthiga Butchery',
+    contactPerson: 'James Wagura',
+    phone: '+254712345678',
+    location: 'Nairobi West',
+    status: 'Active',
+    totalOrders: 12,
+    totalPaid: 248000,
+    outstandingBalance: 42000,
+  },
+  {
+    id: 2,
+    name: 'Kisumu Meat Hub',
+    contactPerson: 'Lucy Achieng',
+    phone: '+254723456789',
+    location: 'Kisumu',
+    status: 'VIP',
+    totalOrders: 9,
+    totalPaid: 330000,
+    outstandingBalance: 26000,
+  },
+  {
+    id: 3,
+    name: 'Nakuru Supplies Co.',
+    contactPerson: 'Peter Kamau',
+    phone: '+254734567890',
+    location: 'Nakuru',
+    status: 'Active',
+    totalOrders: 7,
+    totalPaid: 185000,
+    outstandingBalance: 93000,
+  },
 ]
 
-const defaultCatalogCategories = [
-  { id: 1, name: 'Beauty & Personal Care', description: 'Colognes, skincare, and natural hair essentials' },
-  { id: 2, name: 'Stationery & Desk Essentials', description: 'Notebooks, pens, organizers, books, and desk accessories' },
-  { id: 3, name: 'Drinkware', description: 'Water bottles, mugs, thermal flasks, and portable drink containers' },
-  { id: 4, name: 'Tech & Gadgets', description: 'Flash disks, powerbanks, phone covers, and everyday tech accessories' },
-  { id: 5, name: 'Bags, Apparel & Everyday Carry', description: 'Jute bags, key holders, jerseys, and functional carry accessories' },
-  { id: 6, name: 'Home & Gifting', description: 'Flower bouquets, vases, and thoughtful gifting finds' },
-  { id: 7, name: 'Branding & Customization Services', description: 'Branded merchandise and personalization services, not a product category' },
+const fallbackOrders = [
+  {
+    id: 1,
+    customerName: 'Muthiga Butchery',
+    customerId: 1,
+    meatType: 'Beef',
+    quantity: 45,
+    unitPrice: 420,
+    totalAmount: 18900,
+    amountPaid: 15000,
+    balance: 3900,
+    paymentStatus: 'Partially Paid',
+    orderStatus: 'In Transit',
+    notes: 'Deliver to cold room by 4pm.',
+    orderDate: '2026-09-10T08:00:00.000Z',
+  },
+  {
+    id: 2,
+    customerName: 'Kisumu Meat Hub',
+    customerId: 2,
+    meatType: 'Goat',
+    quantity: 24,
+    unitPrice: 520,
+    totalAmount: 12480,
+    amountPaid: 12480,
+    balance: 0,
+    paymentStatus: 'Paid',
+    orderStatus: 'Delivered',
+    notes: 'Weekend order completed.',
+    orderDate: '2026-09-08T09:30:00.000Z',
+  },
+  {
+    id: 3,
+    customerName: 'Nakuru Supplies Co.',
+    customerId: 3,
+    meatType: 'Chicken',
+    quantity: 80,
+    unitPrice: 180,
+    totalAmount: 14400,
+    amountPaid: 7000,
+    balance: 7400,
+    paymentStatus: 'Partially Paid',
+    orderStatus: 'Pending',
+    notes: 'Awaiting final payment before dispatch.',
+    orderDate: '2026-09-12T11:45:00.000Z',
+  },
 ]
 
-const fallbackProducts = defaultCatalogProducts.map((product) => ({ ...product }))
-const fallbackCategories = defaultCatalogCategories.map((category) => ({ ...category }))
+const fallbackPayments = [
+  {
+    id: 1,
+    orderId: 1,
+    customerName: 'Muthiga Butchery',
+    amount: 15000,
+    paymentDate: '2026-09-10T10:15:00.000Z',
+    method: 'Mpesa',
+    notes: 'Initial deposit',
+  },
+  {
+    id: 2,
+    orderId: 2,
+    customerName: 'Kisumu Meat Hub',
+    amount: 12480,
+    paymentDate: '2026-09-09T14:20:00.000Z',
+    method: 'Bank Transfer',
+    notes: 'Full settlement',
+  },
+  {
+    id: 3,
+    orderId: 3,
+    customerName: 'Nakuru Supplies Co.',
+    amount: 7000,
+    paymentDate: '2026-09-12T13:00:00.000Z',
+    method: 'Cash',
+    notes: 'Partial payment received',
+  },
+]
 
-const fallbackDiscounts = []
-const fallbackOrders = []
-const fallbackCustomers = [{ id: 1, name: 'John Doe', email: 'john@example.com', phone: '+254700000001', joined: '2024-01-15', orders: 3 }]
+const fallbackCowPurchases = [
+  {
+    id: 1,
+    purchaseDate: '2026-09-05T07:00:00.000Z',
+    seller: 'Machakos Farmers Co-op',
+    cowCount: 8,
+    purchasePrice: 42000,
+    totalCost: 336000,
+    weightKg: 220,
+    notes: 'Healthy herd with recent vaccinations.',
+  },
+  {
+    id: 2,
+    purchaseDate: '2026-09-01T08:30:00.000Z',
+    seller: 'Kajiado Livestock Group',
+    cowCount: 5,
+    purchasePrice: 38000,
+    totalCost: 190000,
+    weightKg: 198,
+    notes: 'Pending arrival and health check.',
+  },
+]
+
 const fallbackSettings = {
   id: 1,
-  storeName: 'Skybee',
-  storeEmail: 'hello@skybee.co',
-  storePhone: '+254 700 000 000',
-  storeAddress: 'Nairobi, Kenya',
-  currency: 'KES',
-  taxRate: 16,
-  shippingCost: 300,
+  businessName: 'Vendora',
+  businessEmail: 'hello@vendora.co',
+  businessPhone: '+254 700 000 000',
+  businessAddress: 'Nairobi, Kenya',
+  defaultCurrency: 'KES',
+  reminderThresholdDays: 7,
+  invoicePrefix: 'VND',
 }
 
-let products = fallbackProducts.map((product) => ({ ...product }))
-let categories = fallbackCategories.map((category) => ({ ...category }))
-let discounts = fallbackDiscounts.map((discount) => ({ ...discount }))
 let orders = fallbackOrders.map((order) => ({ ...order }))
-let settings = { ...fallbackSettings }
 let customers = fallbackCustomers.map((customer) => ({ ...customer }))
+let payments = fallbackPayments.map((payment) => ({ ...payment }))
+let cowPurchases = fallbackCowPurchases.map((purchase) => ({ ...purchase }))
+let settings = { ...fallbackSettings }
 
 const addCustomer = (customer) => {
   const normalizedCustomer = {
@@ -181,7 +276,7 @@ const ensureCatalogData = async () => {
 await ensureCatalogData()
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', message: 'Skybee backend is running' })
+  res.json({ status: 'ok', message: 'Vendora backend is running' })
 })
 
 app.post('/api/auth/login', async (req, res) => {
@@ -198,7 +293,10 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   if (email && password) {
-    return res.json({ success: true, admin: { id: 1, email, name: 'Admin' } })
+    const validEmail = email.toLowerCase() === 'admin@vendora.co' || email.toLowerCase() === 'admin@skybee.co'
+    if (validEmail && password === 'admin123') {
+      return res.json({ success: true, admin: { id: 1, email, name: 'Vendora Admin' } })
+    }
   }
 
   return res.status(401).json({ success: false, message: 'Invalid credentials' })
@@ -321,65 +419,40 @@ app.get('/api/orders', async (_req, res) => {
 })
 
 app.post('/api/orders', async (req, res) => {
-  const { items, customer, email, phone, total } = req.body
+  const { customerName, customerId, meatType, quantity, unitPrice, amountPaid, notes, paymentStatus, orderStatus } = req.body
 
-  try {
-    for (const item of items || []) {
-      const productResult = await dbPool.query('SELECT * FROM "Product" WHERE "id" = $1', [Number(item.id)])
-      const product = productResult.rows[0]
-      if (!product) {
-        return res.status(404).json({ message: `Product ${item.id} not found` })
-      }
-      if (product.stock < Number(item.quantity || 1)) {
-        return res.status(400).json({ message: `Not enough stock for ${product.name}` })
-      }
-    }
-
-    for (const item of items || []) {
-      await dbPool.query('UPDATE "Product" SET "stock" = "stock" - $1, "updatedAt" = NOW() WHERE "id" = $2', [Number(item.quantity || 1), Number(item.id)])
-    }
-
-    const orderResult = await dbPool.query(
-      'INSERT INTO "Order" ("customer", "email", "total", "status", "items", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, NOW(), NOW()) RETURNING *',
-      [customer || 'Guest', email || 'guest@example.com', total || 'KSh 0', 'Pending', JSON.stringify(items || [])]
-    )
-
-    return res.status(201).json(orderResult.rows[0])
-  } catch (error) {
-    console.warn('Order create failed, using fallback data:', error.message)
-  }
-
-  for (const item of items || []) {
-    const product = products.find((entry) => entry.id === Number(item.id))
-    if (!product) {
-      return res.status(404).json({ message: `Product ${item.id} not found` })
-    }
-    if (product.stock < Number(item.quantity || 1)) {
-      return res.status(400).json({ message: `Not enough stock for ${product.name}` })
-    }
-  }
-
-  for (const item of items || []) {
-    products = products.map((product) =>
-      product.id === Number(item.id) ? { ...product, stock: product.stock - Number(item.quantity || 1) } : product,
-    )
-  }
-
-  addCustomer({ name: customer || 'Guest Customer', email: email || 'guest@example.com', phone: phone || 'N/A' })
+  const parsedQuantity = Number(quantity || 0)
+  const parsedUnitPrice = Number(unitPrice || 0)
+  const parsedPaid = Number(amountPaid || 0)
+  const totalAmount = parsedQuantity * parsedUnitPrice
+  const balance = totalAmount - parsedPaid
+  const resolvedPaymentStatus = paymentStatus || (parsedPaid >= totalAmount ? 'Paid' : parsedPaid > 0 ? 'Partially Paid' : 'Outstanding')
 
   const order = {
     id: Date.now(),
-    customer: customer || 'Guest',
-    email: email || 'guest@example.com',
-    phone: phone || 'N/A',
-    total: total || 'KSh 0',
-    status: 'Pending',
-    items: items || [],
-    createdAt: new Date().toISOString(),
+    customerId: customerId || null,
+    customerName: customerName || 'Walk-in Customer',
+    meatType: meatType || 'Beef',
+    quantity: parsedQuantity,
+    unitPrice: parsedUnitPrice,
+    totalAmount,
+    amountPaid: parsedPaid,
+    balance,
+    paymentStatus: resolvedPaymentStatus,
+    orderStatus: orderStatus || 'Pending',
+    notes: notes || '',
+    orderDate: new Date().toISOString(),
   }
 
   orders = [order, ...orders]
-  res.status(201).json(order)
+
+  const customer = customers.find((entry) => entry.id === Number(customerId))
+  if (customer) {
+    customer.totalOrders = (customer.totalOrders || 0) + 1
+    customer.outstandingBalance = Number(customer.outstandingBalance || 0) + balance
+  }
+
+  return res.status(201).json(order)
 })
 
 app.get('/api/categories', async (_req, res) => {
@@ -465,6 +538,74 @@ app.get('/api/customers', (_req, res) => {
   res.json(customers)
 })
 
+app.post('/api/customers', (req, res) => {
+  const { name, contactPerson, phone, location, status } = req.body
+
+  const customer = {
+    id: Date.now(),
+    name: name || 'New Customer',
+    contactPerson: contactPerson || '',
+    phone: phone || 'N/A',
+    location: location || '',
+    status: status || 'Active',
+    totalOrders: 0,
+    totalPaid: 0,
+    outstandingBalance: 0,
+  }
+
+  customers = [customer, ...customers]
+  res.status(201).json(customer)
+})
+
+app.put('/api/customers/:id', (req, res) => {
+  const id = Number(req.params.id)
+  const customer = customers.find((entry) => entry.id === id)
+
+  if (!customer) {
+    return res.status(404).json({ message: 'Customer not found' })
+  }
+
+  const updated = { ...customer, ...req.body }
+  customers = customers.map((entry) => entry.id === id ? updated : entry)
+  return res.json(updated)
+})
+
+app.delete('/api/customers/:id', (req, res) => {
+  const id = Number(req.params.id)
+  customers = customers.filter((customer) => customer.id !== id)
+  res.json({ success: true })
+})
+
+app.put('/api/orders/:id', (req, res) => {
+  const id = Number(req.params.id)
+  const order = orders.find((entry) => entry.id === id)
+
+  if (!order) {
+    return res.status(404).json({ message: 'Order not found' })
+  }
+
+  const updated = {
+    ...order,
+    ...req.body,
+  }
+
+  const quantity = Number(updated.quantity || 0)
+  const unitPrice = Number(updated.unitPrice || 0)
+  const amountPaid = Number(updated.amountPaid || 0)
+  updated.totalAmount = quantity * unitPrice
+  updated.balance = updated.totalAmount - amountPaid
+  updated.paymentStatus = updated.paymentStatus || (amountPaid >= updated.totalAmount ? 'Paid' : amountPaid > 0 ? 'Partially Paid' : 'Outstanding')
+
+  orders = orders.map((entry) => entry.id === id ? updated : entry)
+  return res.json(updated)
+})
+
+app.delete('/api/orders/:id', (req, res) => {
+  const id = Number(req.params.id)
+  orders = orders.filter((order) => order.id !== id)
+  res.json({ success: true })
+})
+
 app.put('/api/orders/:id/status', async (req, res) => {
   const id = Number(req.params.id)
   const { status } = req.body
@@ -476,14 +617,72 @@ app.put('/api/orders/:id/status', async (req, res) => {
     console.warn('Order status update failed, using fallback data:', error.message)
   }
 
-  orders = orders.map((order) => (order.id === id ? { ...order, status: status || order.status } : order))
-  const updatedOrder = orders.find((order) => order.id === id)
-
-  if (!updatedOrder) {
+  const order = orders.find((entry) => entry.id === id)
+  if (!order) {
     return res.status(404).json({ message: 'Order not found' })
   }
 
-  return res.json(updatedOrder)
+  order.orderStatus = status || order.orderStatus
+  return res.json(order)
+})
+
+app.get('/api/payments', (_req, res) => {
+  res.json(payments)
+})
+
+app.post('/api/payments', (req, res) => {
+  const { orderId, customerName, amount, paymentDate, method, notes } = req.body
+  const payment = {
+    id: Date.now(),
+    orderId: Number(orderId),
+    customerName: customerName || 'Customer',
+    amount: Number(amount || 0),
+    paymentDate: paymentDate || new Date().toISOString(),
+    method: method || 'Mpesa',
+    notes: notes || '',
+  }
+
+  payments = [payment, ...payments]
+
+  const order = orders.find((entry) => entry.id === Number(orderId))
+  if (order) {
+    order.amountPaid = Number(order.amountPaid || 0) + Number(amount || 0)
+    order.balance = Math.max(0, Number(order.totalAmount || 0) - order.amountPaid)
+    order.paymentStatus = order.amountPaid >= Number(order.totalAmount || 0) ? 'Paid' : order.amountPaid > 0 ? 'Partially Paid' : 'Outstanding'
+  }
+
+  const customer = customers.find((entry) => entry.name === customerName)
+  if (customer) {
+    customer.totalPaid = Number(customer.totalPaid || 0) + Number(amount || 0)
+    customer.outstandingBalance = Math.max(0, Number(customer.outstandingBalance || 0) - Number(amount || 0))
+  }
+
+  res.status(201).json(payment)
+})
+
+app.get('/api/cow-purchases', (_req, res) => {
+  res.json(cowPurchases)
+})
+
+app.post('/api/cow-purchases', (req, res) => {
+  const { purchaseDate, seller, cowCount, purchasePrice, weightKg, notes } = req.body
+  const parsedCowCount = Number(cowCount || 0)
+  const parsedPurchasePrice = Number(purchasePrice || 0)
+  const totalCost = parsedCowCount * parsedPurchasePrice
+
+  const purchase = {
+    id: Date.now(),
+    purchaseDate: purchaseDate || new Date().toISOString(),
+    seller: seller || 'Unknown Seller',
+    cowCount: parsedCowCount,
+    purchasePrice: parsedPurchasePrice,
+    totalCost,
+    weightKg: weightKg || null,
+    notes: notes || '',
+  }
+
+  cowPurchases = [purchase, ...cowPurchases]
+  res.status(201).json(purchase)
 })
 
 app.get('/api/settings', (_req, res) => {
@@ -496,5 +695,5 @@ app.put('/api/settings', (req, res) => {
 })
 
 app.listen(PORT, () => {
-  console.log(`Skybee backend running on http://localhost:${PORT}`)
+  console.log(`Vendora backend running on http://localhost:${PORT}`)
 })

@@ -6,59 +6,82 @@ datasource db {
   provider = "postgresql"
 }
 
-model Product {
-  id          Int      @id @default(autoincrement())
-  name        String
-  category    String
-  price       Int
-  stock       Int
-  discount    Int      @default(0)
-  image       String?
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
+model Customer {
+  id               Int      @id @default(autoincrement())
+  name             String
+  contactPerson    String?
+  phone            String
+  location         String?
+  status           String   @default("Active")
+  totalOrders      Int      @default(0)
+  totalPaid        Int      @default(0)
+  outstandingBalance Int    @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-model Category {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique
-  description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-}
-
-model Discount {
-  id        Int      @id @default(autoincrement())
-  name      String
-  code      String   @unique
-  amount    Int
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  orders           Order[]
 }
 
 model Order {
-  id        Int      @id @default(autoincrement())
-  customer  String
-  email     String
-  total     String
-  status    String   @default("Pending")
-  items     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  customerId     Int?
+  customerName   String
+  contactPerson  String?
+  orderDate      DateTime @default(now())
+  meatType       String
+  quantity       Int
+  unitPrice      Int
+  totalAmount    Int
+  amountPaid     Int      @default(0)
+  balance        Int      @default(0)
+  paymentStatus  String   @default("Outstanding")
+  orderStatus    String   @default("Pending")
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  payments       Payment[]
 }
 
-model Setting {
-  id            Int      @id @default(autoincrement())
-  storeName     String
-  storeEmail    String
-  storePhone    String
-  storeAddress  String
-  currency      String   @default("KES")
-  taxRate       Int      @default(16)
-  shippingCost  Int      @default(300)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+model Payment {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  customerName String
+  amount      Int
+  paymentDate DateTime @default(now())
+  method      String   @default("Mpesa")
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  order       Order    @relation(fields: [orderId], references: [id])
+}
+
+model CowPurchase {
+  id             Int      @id @default(autoincrement())
+  purchaseDate   DateTime @default(now())
+  seller         String
+  cowCount       Int
+  purchasePrice  Int
+  totalCost      Int
+  weightKg       Float?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model BusinessSetting {
+  id                  Int      @id @default(autoincrement())
+  businessName        String
+  businessEmail       String
+  businessPhone       String
+  businessAddress     String
+  defaultCurrency     String   @default("KES")
+  reminderThresholdDays Int     @default(7)
+  invoicePrefix       String   @default("VND")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model AdminUser {

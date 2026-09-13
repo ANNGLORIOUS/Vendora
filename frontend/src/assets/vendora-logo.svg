@@ -1,0 +1,45 @@
+<svg width="1200" height="760" viewBox="0 0 1200 760" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="760" fill="#020A08"/>
+
+  <defs>
+    <linearGradient id="vendoraGradient" x1="252" y1="88" x2="742" y2="628" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#5AF2CF"/>
+      <stop offset="0.28" stop-color="#19D4A7"/>
+      <stop offset="0.7" stop-color="#0BAA8B"/>
+      <stop offset="1" stop-color="#0B7A66"/>
+    </linearGradient>
+    <linearGradient id="vendoraGradient2" x1="485" y1="146" x2="838" y2="600" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#72F7D7"/>
+      <stop offset="0.35" stop-color="#20D7A3"/>
+      <stop offset="1" stop-color="#0A886D"/>
+    </linearGradient>
+    <linearGradient id="vendoraText" x1="246" y1="464" x2="814" y2="576" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7FFCE0"/>
+      <stop offset="0.46" stop-color="#2DD9AF"/>
+      <stop offset="1" stop-color="#0B8E73"/>
+    </linearGradient>
+  </defs>
+
+  <path d="M329 154C293 124 241 120 192 156L116 222C87 245 74 281 82 316L113 437C121 469 151 490 184 487L227 482C257 479 277 451 273 421L245 246L271 205L329 154Z" fill="url(#vendoraGradient)"/>
+  <path d="M556 153C531 125 490 118 447 136L377 173C342 192 320 230 320 270L320 334C320 358 334 381 358 391L411 416C443 430 481 416 500 385L562 286L598 239L670 153C638 118 600 108 556 153Z" fill="url(#vendoraGradient2)"/>
+  <path d="M730 264C807 219 891 219 966 267L1042 316C1065 330 1077 357 1074 385L1060 494C1054 545 1011 582 961 584L890 588C832 591 777 550 764 493L692 389C680 340 689 292 730 264Z" fill="url(#vendoraGradient)"/>
+  <path d="M835 188C843 172 862 162 879 166C896 170 910 184 914 201L931 271C935 289 927 307 911 316L883 333C865 343 844 341 829 326L758 264C742 250 738 227 749 209L771 172C781 155 797 145 815 147L835 188Z" fill="#00D9A3" opacity="0.9"/>
+
+  <g opacity="0.9">
+    <path d="M466 317L563 182C581 158 611 158 629 182L714 300C725 314 724 334 711 346L658 395C642 409 620 409 604 396L546 351L489 409C474 423 450 424 435 412L399 385C382 372 381 346 397 332L466 317Z" fill="url(#vendoraGradient2)"/>
+    <path d="M523 466L564 415H660L619 476H523V466Z" fill="#0B8A70" opacity="0.9"/>
+    <path d="M679 419H744V487H679V419Z" fill="#0F876D" opacity="0.85"/>
+    <path d="M621 514H691V585H621V514Z" fill="#10A586" opacity="0.85"/>
+    <path d="M465 566H548V635H465V566Z" fill="#0F876D" opacity="0.82"/>
+  </g>
+
+  <g>
+    <path d="M295 251L470 545H395L225 251H295Z" fill="url(#vendoraText)"/>
+    <path d="M657 251H731L874 545H800L657 251Z" fill="url(#vendoraText)"/>
+    <path d="M478 251H548L678 545H607L478 251Z" fill="url(#vendoraText)"/>
+  </g>
+
+  <text x="620" y="620" text-anchor="middle" fill="url(#vendoraText)" font-size="126" font-family="Arial, Helvetica, sans-serif" font-weight="900" letter-spacing="2">VENDORA</text>
+  <line x1="340" y1="680" x2="860" y2="680" stroke="#10D7A4" stroke-width="6" stroke-linecap="round" opacity="0.9"/>
+  <text x="620" y="730" text-anchor="middle" fill="#12D7A5" font-size="34" font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="8">MANAGE • TRACK • GROW</text>
+</svg>

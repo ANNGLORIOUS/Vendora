@@ -4,13 +4,13 @@ const API_BASE = 'http://localhost:5000/api'
 
 function AdminSettings() {
   const [settings, setSettings] = useState({
-    storeName: '',
-    storeEmail: '',
-    storePhone: '',
-    storeAddress: '',
-    currency: 'KES',
-    taxRate: 16,
-    shippingCost: 300,
+    businessName: '',
+    businessEmail: '',
+    businessPhone: '',
+    businessAddress: '',
+    defaultCurrency: 'KES',
+    reminderThresholdDays: 7,
+    invoicePrefix: 'VND',
   })
 
   const [saved, setSaved] = useState(false)
@@ -51,107 +51,103 @@ function AdminSettings() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">Store Settings</h1>
+      <h1 className="text-3xl font-bold text-[#12372a]">Business Settings</h1>
 
       {saved && (
-        <div className="rounded-lg bg-green-100 p-4 text-green-700">
+        <div className="rounded-lg bg-[#eaf3ec] p-4 text-[#2e7d32]">
           ✓ Settings saved successfully
         </div>
       )}
 
-      <form onSubmit={handleSave} className="space-y-6 rounded-lg bg-white p-6 shadow">
-        {/* Store Information */}
+      <form onSubmit={handleSave} className="space-y-6 rounded-2xl bg-white p-6 shadow-sm border border-[#eee5d2]">
         <div>
-          <h2 className="mb-4 text-lg font-bold text-gray-800">Store Information</h2>
+          <h2 className="mb-4 text-lg font-bold text-[#12372a]">Business profile</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-gray-700">Store Name</label>
+              <label className="block text-sm font-semibold text-[#12372a]">Business Name</label>
               <input
                 type="text"
-                value={settings.storeName}
-                onChange={(e) => handleChange('storeName', e.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-(--brand-700)"
+                value={settings.businessName}
+                onChange={(e) => handleChange('businessName', e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#d9d0ba] px-4 py-2 outline-none focus:border-[#1f6f4a]"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700">Store Email</label>
+              <label className="block text-sm font-semibold text-[#12372a]">Business Email</label>
               <input
                 type="email"
-                value={settings.storeEmail}
-                onChange={(e) => handleChange('storeEmail', e.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-(--brand-700)"
+                value={settings.businessEmail}
+                onChange={(e) => handleChange('businessEmail', e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#d9d0ba] px-4 py-2 outline-none focus:border-[#1f6f4a]"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700">Store Phone</label>
+              <label className="block text-sm font-semibold text-[#12372a]">Business Phone</label>
               <input
                 type="tel"
-                value={settings.storePhone}
-                onChange={(e) => handleChange('storePhone', e.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-(--brand-700)"
+                value={settings.businessPhone}
+                onChange={(e) => handleChange('businessPhone', e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#d9d0ba] px-4 py-2 outline-none focus:border-[#1f6f4a]"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700">Store Address</label>
+              <label className="block text-sm font-semibold text-[#12372a]">Business Address</label>
               <input
                 type="text"
-                value={settings.storeAddress}
-                onChange={(e) => handleChange('storeAddress', e.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-(--brand-700)"
+                value={settings.businessAddress}
+                onChange={(e) => handleChange('businessAddress', e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#d9d0ba] px-4 py-2 outline-none focus:border-[#1f6f4a]"
               />
             </div>
           </div>
         </div>
 
-        {/* Pricing Settings */}
-        <div className="border-t border-gray-200 pt-6">
-          <h2 className="mb-4 text-lg font-bold text-gray-800">Pricing Settings</h2>
+        <div className="border-t border-[#eee5d2] pt-6">
+          <h2 className="mb-4 text-lg font-bold text-[#12372a]">Operations</h2>
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="block text-sm font-semibold text-gray-700">Currency</label>
+              <label className="block text-sm font-semibold text-[#12372a]">Currency</label>
               <select
-                value={settings.currency}
-                onChange={(e) => handleChange('currency', e.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-(--brand-700)"
+                value={settings.defaultCurrency}
+                onChange={(e) => handleChange('defaultCurrency', e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#d9d0ba] px-4 py-2 outline-none focus:border-[#1f6f4a]"
               >
-                <option value="KES">KES (Kenyan Shilling)</option>
-                <option value="USD">USD (US Dollar)</option>
-                <option value="EUR">EUR (Euro)</option>
+                <option value="KES">KES</option>
+                <option value="USD">USD</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700">Tax Rate (%)</label>
+              <label className="block text-sm font-semibold text-[#12372a]">Reminder threshold (days)</label>
               <input
                 type="number"
-                value={settings.taxRate}
-                onChange={(e) => handleChange('taxRate', e.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-(--brand-700)"
+                value={settings.reminderThresholdDays}
+                onChange={(e) => handleChange('reminderThresholdDays', e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#d9d0ba] px-4 py-2 outline-none focus:border-[#1f6f4a]"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700">Shipping Cost</label>
+              <label className="block text-sm font-semibold text-[#12372a]">Invoice prefix</label>
               <input
-                type="number"
-                value={settings.shippingCost}
-                onChange={(e) => handleChange('shippingCost', e.target.value)}
-                className="mt-2 w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-(--brand-700)"
+                type="text"
+                value={settings.invoicePrefix}
+                onChange={(e) => handleChange('invoicePrefix', e.target.value)}
+                className="mt-2 w-full rounded-lg border border-[#d9d0ba] px-4 py-2 outline-none focus:border-[#1f6f4a]"
               />
             </div>
           </div>
         </div>
 
-        {/* Save Button */}
-        <div className="border-t border-gray-200 pt-6">
+        <div className="border-t border-[#eee5d2] pt-6">
           <button
             type="submit"
-            className="rounded-lg bg-(--brand-900) px-6 py-2 font-semibold text-white transition hover:bg-(--brand-700)"
+            className="rounded-lg bg-[#12372a] px-6 py-2 font-semibold text-white transition hover:bg-[#1f6f4a]"
           >
-            Save Settings
+            Save settings
           </button>
         </div>
       </form>

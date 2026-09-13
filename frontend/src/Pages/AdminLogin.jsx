@@ -36,34 +36,34 @@ function AdminLogin() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-(--brand-100) px-4">
-      <div className="w-full max-w-md rounded-lg bg-white p-8 shadow-lg">
+    <div className="flex min-h-screen items-center justify-center bg-[#f8f6ef] px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl border border-[#e7dcc4]">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-(--brand-900)">Skybee</h1>
-          <p className="mt-2 text-sm text-(--text-soft)">Admin Dashboard</p>
+          <h1 className="text-3xl font-black tracking-widest text-[#12372a]">VENDORA</h1>
+          <p className="mt-2 text-sm text-[#4b5563]">Business dashboard</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-(--brand-900)">Email</label>
+            <label className="block text-sm font-semibold text-[#12372a]">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@skybee.co"
-              className="mt-2 w-full rounded-lg border border-(--brand-300) bg-white px-4 py-2 text-sm outline-none focus:border-(--brand-700) focus:ring-2 focus:ring-(--brand-700)/20"
+              placeholder="admin@vendora.co"
+              className="mt-2 w-full rounded-lg border border-[#d4a72c] bg-white px-4 py-2 text-sm outline-none focus:border-[#1f6f4a]"
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-(--brand-900)">Password</label>
+            <label className="block text-sm font-semibold text-[#12372a]">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="mt-2 w-full rounded-lg border border-(--brand-300) bg-white px-4 py-2 text-sm outline-none focus:border-(--brand-700) focus:ring-2 focus:ring-(--brand-700)/20"
+              className="mt-2 w-full rounded-lg border border-[#d4a72c] bg-white px-4 py-2 text-sm outline-none focus:border-[#1f6f4a]"
               required
             />
           </div>
@@ -77,16 +77,16 @@ function AdminLogin() {
           <button
             type="submit"
             disabled={loading}
-            className="mt-6 w-full rounded-lg bg-(--brand-900) px-4 py-2 font-semibold text-white transition hover:bg-(--brand-700) disabled:opacity-50"
+            className="mt-6 w-full rounded-lg bg-[#12372a] px-4 py-2 font-semibold text-white transition hover:bg-[#1f6f4a] disabled:opacity-50"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
 
-        <div className="mt-6 border-t border-(--brand-300) pt-6">
-          <p className="text-center text-xs text-(--text-soft)">
+        <div className="mt-6 border-t border-[#e7dcc4] pt-6">
+          <p className="text-center text-xs text-[#4b5563]">
             Demo Credentials:<br />
-            Email: admin@skybee.co<br />
+            Email: admin@vendora.co<br />
             Password: admin123
           </p>
         </div>
