@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 const API_BASE = 'http://localhost:5000/api'
 
 function AdminCustomers() {
   const [customers, setCustomers] = useState([])
   const [form, setForm] = useState({ name: '', contactPerson: '', phone: '', location: '', status: 'Active' })
+  const { getAuthHeaders } = useAuth()
 
   const fetchCustomers = async () => {
     try {
-      const response = await fetch(`${API_BASE}/customers`)
+      const response = await fetch(`${API_BASE}/customers`, { headers: getAuthHeaders() })
       const data = await response.json()
       setCustomers(data)
     } catch (error) {
@@ -30,7 +32,7 @@ function AdminCustomers() {
     try {
       await fetch(`${API_BASE}/customers`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(form),
       })
 

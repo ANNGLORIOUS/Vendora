@@ -1,14 +1,31 @@
 import { useState } from 'react'
+import { useAuth } from '../context/AuthContext'
+
+const API_BASE = 'http://localhost:5000/api'
 
 function AdminSms() {
   const [template, setTemplate] = useState('Dear customer, your payment is overdue. Please settle your balance to avoid service interruption.')
   const [recipient, setRecipient] = useState('Muthiga Butchery')
   const [sent, setSent] = useState(false)
+  const { getAuthHeaders } = useAuth()
 
-  const handleSend = (event) => {
+  const handleSend = async (event) => {
     event.preventDefault()
-    setSent(true)
-    setTimeout(() => setSent(false), 2500)
+
+    try {
+      const response = await fetch(`${API_BASE}/sms/reminders/send`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ recipient, phone: '+254700000000', template }),
+      })
+
+      if (response.ok) {
+        setSent(true)
+        setTimeout(() => setSent(false), 2500)
+      }
+    } catch (error) {
+      console.error('Failed to queue SMS reminder', error)
+    }
   }
 
   return (

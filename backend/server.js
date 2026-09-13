@@ -6,6 +6,7 @@ import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import pg from 'pg'
+import jwt from 'jsonwebtoken'
 
 dotenv.config()
 
@@ -31,6 +32,7 @@ const upload = multer({ storage })
 const app = express()
 const PORT = process.env.PORT || 5000
 const { Pool } = pg
+const JWT_SECRET = process.env.JWT_SECRET || 'vendora-dev-secret-change-me'
 const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5434/skybee?schema=public'
 const dbPool = new Pool({ connectionString: databaseUrl })
 
@@ -41,6 +43,33 @@ dbPool.on('error', (error) => {
 app.use(cors())
 app.use(express.json())
 app.use('/uploads', express.static(uploadDir))
+
+const generateToken = (admin) => jwt.sign({ id: admin.id, email: admin.email, role: 'admin' }, JWT_SECRET, { expiresIn: '12h' })
+
+const requireAuth = (req, res, next) => {
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
+
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'Authentication required', code: 'AUTH_REQUIRED' })
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET)
+    req.user = payload
+    return next()
+  } catch (error) {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token', code: 'INVALID_TOKEN' })
+  }
+}
+
+const requireAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ success: false, message: 'Admin access required', code: 'FORBIDDEN' })
+  }
+
+  return next()
+}
 
 const fallbackCustomers = [
   {
@@ -331,6 +360,18 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', message: 'Vendora backend is running' })
 })
 
+app.get('/api/auth/me', requireAuth, requireAdmin, (req, res) => {
+  res.json({
+    success: true,
+    admin: {
+      id: req.user.id,
+      email: req.user.email,
+      name: req.user.name || 'Vendora Admin',
+      role: req.user.role,
+    },
+  })
+})
+
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body
 
@@ -338,7 +379,8 @@ app.post('/api/auth/login', async (req, res) => {
     const adminResult = await dbPool.query('SELECT * FROM "AdminUser" WHERE email = $1 AND password = $2 LIMIT 1', [email, password])
     if (adminResult.rows[0]) {
       const admin = adminResult.rows[0]
-      return res.json({ success: true, admin: { id: admin.id, email: admin.email, name: admin.name } })
+      const token = generateToken({ id: admin.id, email: admin.email, name: admin.name })
+      return res.json({ success: true, token, admin: { id: admin.id, email: admin.email, name: admin.name, role: 'admin' } })
     }
   } catch (error) {
     console.warn('Auth lookup failed, using fallback login:', error.message)
@@ -347,11 +389,17 @@ app.post('/api/auth/login', async (req, res) => {
   if (email && password) {
     const validEmail = email.toLowerCase() === 'admin@vendora.co' || email.toLowerCase() === 'admin@skybee.co'
     if (validEmail && password === 'admin123') {
-      return res.json({ success: true, admin: { id: 1, email, name: 'Vendora Admin' } })
+      const admin = { id: 1, email: email.toLowerCase(), name: 'Vendora Admin' }
+      const token = generateToken(admin)
+      return res.json({ success: true, token, admin: { ...admin, role: 'admin' } })
     }
   }
 
   return res.status(401).json({ success: false, message: 'Invalid credentials' })
+})
+
+app.post('/api/auth/logout', (_req, res) => {
+  res.json({ success: true, message: 'Logged out successfully' })
 })
 
 app.get('/api/products', async (_req, res) => {
@@ -586,11 +634,11 @@ app.delete('/api/discounts/:id', (req, res) => {
   res.json({ success: true })
 })
 
-app.get('/api/customers', (_req, res) => {
+app.get('/api/customers', requireAuth, requireAdmin, (_req, res) => {
   res.json(customers)
 })
 
-app.post('/api/customers', (req, res) => {
+app.post('/api/customers', requireAuth, requireAdmin, (req, res) => {
   const { name, contactPerson, phone, location, status } = req.body
 
   const customer = {
@@ -609,7 +657,7 @@ app.post('/api/customers', (req, res) => {
   res.status(201).json(customer)
 })
 
-app.put('/api/customers/:id', (req, res) => {
+app.put('/api/customers/:id', requireAuth, requireAdmin, (req, res) => {
   const id = Number(req.params.id)
   const customer = customers.find((entry) => entry.id === id)
 
@@ -622,13 +670,13 @@ app.put('/api/customers/:id', (req, res) => {
   return res.json(updated)
 })
 
-app.delete('/api/customers/:id', (req, res) => {
+app.delete('/api/customers/:id', requireAuth, requireAdmin, (req, res) => {
   const id = Number(req.params.id)
   customers = customers.filter((customer) => customer.id !== id)
   res.json({ success: true })
 })
 
-app.put('/api/orders/:id', (req, res) => {
+app.put('/api/orders/:id', requireAuth, requireAdmin, (req, res) => {
   const id = Number(req.params.id)
   const order = orders.find((entry) => entry.id === id)
 
@@ -652,13 +700,13 @@ app.put('/api/orders/:id', (req, res) => {
   return res.json(updated)
 })
 
-app.delete('/api/orders/:id', (req, res) => {
+app.delete('/api/orders/:id', requireAuth, requireAdmin, (req, res) => {
   const id = Number(req.params.id)
   orders = orders.filter((order) => order.id !== id)
   res.json({ success: true })
 })
 
-app.put('/api/orders/:id/status', async (req, res) => {
+app.put('/api/orders/:id/status', requireAuth, requireAdmin, async (req, res) => {
   const id = Number(req.params.id)
   const { status } = req.body
 
@@ -678,11 +726,11 @@ app.put('/api/orders/:id/status', async (req, res) => {
   return res.json(order)
 })
 
-app.get('/api/payments', (_req, res) => {
+app.get('/api/payments', requireAuth, requireAdmin, (_req, res) => {
   res.json(payments)
 })
 
-app.post('/api/payments', (req, res) => {
+app.post('/api/payments', requireAuth, requireAdmin, (req, res) => {
   const { orderId, customerName, amount, paymentDate, method, notes } = req.body
   const payment = {
     id: Date.now(),
@@ -712,11 +760,11 @@ app.post('/api/payments', (req, res) => {
   res.status(201).json(payment)
 })
 
-app.get('/api/cow-purchases', (_req, res) => {
+app.get('/api/cow-purchases', requireAuth, requireAdmin, (_req, res) => {
   res.json(cowPurchases)
 })
 
-app.post('/api/cow-purchases', (req, res) => {
+app.post('/api/cow-purchases', requireAuth, requireAdmin, (req, res) => {
   const { purchaseDate, seller, cowCount, purchasePrice, weightKg, notes } = req.body
   const parsedCowCount = Number(cowCount || 0)
   const parsedPurchasePrice = Number(purchasePrice || 0)
@@ -737,11 +785,11 @@ app.post('/api/cow-purchases', (req, res) => {
   res.status(201).json(purchase)
 })
 
-app.get('/api/suppliers', (_req, res) => {
+app.get('/api/suppliers', requireAuth, requireAdmin, (_req, res) => {
   res.json(suppliers)
 })
 
-app.post('/api/suppliers', (req, res) => {
+app.post('/api/suppliers', requireAuth, requireAdmin, (req, res) => {
   const supplier = {
     id: Date.now(),
     name: req.body.name || 'New Supplier',
@@ -755,11 +803,11 @@ app.post('/api/suppliers', (req, res) => {
   res.status(201).json(supplier)
 })
 
-app.get('/api/expenses', (_req, res) => {
+app.get('/api/expenses', requireAuth, requireAdmin, (_req, res) => {
   res.json(expenses)
 })
 
-app.post('/api/expenses', (req, res) => {
+app.post('/api/expenses', requireAuth, requireAdmin, (req, res) => {
   const expense = {
     id: Date.now(),
     category: req.body.category || 'Other',
@@ -773,7 +821,7 @@ app.post('/api/expenses', (req, res) => {
   res.status(201).json(expense)
 })
 
-app.get('/api/reports/dashboard', (_req, res) => {
+app.get('/api/reports/dashboard', requireAuth, requireAdmin, (_req, res) => {
   const totalRevenue = orders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0)
   const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
   const outstanding = customers.reduce((sum, customer) => sum + Number(customer.outstandingBalance || 0), 0)
@@ -789,7 +837,7 @@ app.get('/api/reports/dashboard', (_req, res) => {
   })
 })
 
-app.get('/api/reports/outstanding', (_req, res) => {
+app.get('/api/reports/outstanding', requireAuth, requireAdmin, (_req, res) => {
   const rows = customers.map((customer) => ({
     name: customer.name,
     balance: Number(customer.outstandingBalance || 0),
@@ -799,11 +847,11 @@ app.get('/api/reports/outstanding', (_req, res) => {
   res.json(rows)
 })
 
-app.get('/api/sms/logs', (_req, res) => {
+app.get('/api/sms/logs', requireAuth, requireAdmin, (_req, res) => {
   res.json(smsLogs)
 })
 
-app.post('/api/sms/reminders/send', (req, res) => {
+app.post('/api/sms/reminders/send', requireAuth, requireAdmin, (req, res) => {
   const log = {
     id: Date.now(),
     recipient: req.body.recipient || 'Customer',
@@ -817,11 +865,11 @@ app.post('/api/sms/reminders/send', (req, res) => {
   res.status(201).json(log)
 })
 
-app.get('/api/settings', (_req, res) => {
+app.get('/api/settings', requireAuth, requireAdmin, (_req, res) => {
   res.json(settings)
 })
 
-app.put('/api/settings', (req, res) => {
+app.put('/api/settings', requireAuth, requireAdmin, (req, res) => {
   settings = { ...settings, ...req.body }
   res.json(settings)
 })

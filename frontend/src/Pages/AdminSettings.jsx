@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 const API_BASE = 'http://localhost:5000/api'
 
 function AdminSettings() {
+  const { getAuthHeaders } = useAuth()
   const [settings, setSettings] = useState({
     businessName: '',
     businessEmail: '',
@@ -18,7 +20,7 @@ function AdminSettings() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await fetch(`${API_BASE}/settings`)
+        const response = await fetch(`${API_BASE}/settings`, { headers: getAuthHeaders() })
         const data = await response.json()
         setSettings(data)
       } catch (error) {
@@ -39,7 +41,7 @@ function AdminSettings() {
     try {
       await fetch(`${API_BASE}/settings`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(settings),
       })
       setSaved(true)

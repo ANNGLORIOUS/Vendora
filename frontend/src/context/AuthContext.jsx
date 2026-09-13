@@ -13,6 +13,14 @@ export function AuthProvider({ children }) {
     }
   })
 
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('vendoraToken')
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    }
+  }
+
   const login = async (credentials) => {
     try {
       const response = await fetch(`${API_BASE}/auth/login`, {
@@ -29,6 +37,9 @@ export function AuthProvider({ children }) {
       const adminData = { ...data.admin, role: 'admin' }
       setAdmin(adminData)
       localStorage.setItem('adminData', JSON.stringify(adminData))
+      if (data.token) {
+        localStorage.setItem('vendoraToken', data.token)
+      }
       return true
     } catch (error) {
       console.error('Login failed', error)
@@ -39,10 +50,11 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setAdmin(null)
     localStorage.removeItem('adminData')
+    localStorage.removeItem('vendoraToken')
   }
 
   return (
-    <AuthContext.Provider value={{ admin, login, logout }}>
+    <AuthContext.Provider value={{ admin, login, logout, getAuthHeaders }}>
       {children}
     </AuthContext.Provider>
   )

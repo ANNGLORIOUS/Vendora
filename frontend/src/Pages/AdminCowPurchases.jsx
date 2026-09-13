@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
+import { useAuth } from '../context/AuthContext'
 
 const API_BASE = 'http://localhost:5000/api'
 
 function AdminCowPurchases() {
   const [purchases, setPurchases] = useState([])
   const [form, setForm] = useState({ purchaseDate: new Date().toISOString().slice(0, 10), seller: '', cowCount: '', purchasePrice: '', weightKg: '', notes: '' })
+  const { getAuthHeaders } = useAuth()
 
   const fetchPurchases = async () => {
     try {
-      const response = await fetch(`${API_BASE}/cow-purchases`)
+      const response = await fetch(`${API_BASE}/cow-purchases`, { headers: getAuthHeaders() })
       const data = await response.json()
       setPurchases(data)
     } catch (error) {
@@ -30,7 +32,7 @@ function AdminCowPurchases() {
     try {
       await fetch(`${API_BASE}/cow-purchases`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(form),
       })
 

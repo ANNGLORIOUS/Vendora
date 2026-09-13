@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 const API_BASE = 'http://localhost:5000/api'
 
@@ -8,15 +9,16 @@ function AdminDashboard() {
   const [customers, setCustomers] = useState([])
   const [payments, setPayments] = useState([])
   const [cowPurchases, setCowPurchases] = useState([])
+  const { getAuthHeaders } = useAuth()
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [ordersRes, customersRes, paymentsRes, cowsRes] = await Promise.all([
-          fetch(`${API_BASE}/orders`),
-          fetch(`${API_BASE}/customers`),
-          fetch(`${API_BASE}/payments`),
-          fetch(`${API_BASE}/cow-purchases`),
+          fetch(`${API_BASE}/orders`, { headers: getAuthHeaders() }),
+          fetch(`${API_BASE}/customers`, { headers: getAuthHeaders() }),
+          fetch(`${API_BASE}/payments`, { headers: getAuthHeaders() }),
+          fetch(`${API_BASE}/cow-purchases`, { headers: getAuthHeaders() }),
         ])
 
         const [ordersData, customersData, paymentsData, cowsData] = await Promise.all([
