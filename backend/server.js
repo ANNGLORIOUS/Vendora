@@ -179,6 +179,55 @@ const fallbackCowPurchases = [
   },
 ]
 
+const fallbackSuppliers = [
+  {
+    id: 1,
+    name: 'Machakos Farmers Co-op',
+    phone: '+254712220011',
+    email: 'orders@machakosfarmers.co.ke',
+    location: 'Machakos',
+    status: 'Active',
+  },
+  {
+    id: 2,
+    name: 'Kajiado Livestock Group',
+    phone: '+254723446677',
+    email: 'info@kajiadolivestock.co.ke',
+    location: 'Kajiado',
+    status: 'VIP',
+  },
+]
+
+const fallbackExpenses = [
+  {
+    id: 1,
+    category: 'Feed',
+    amount: 54000,
+    description: 'Livestock feed delivery',
+    vendor: 'Green Pasture Feeds',
+    incurredDate: '2026-09-12T00:00:00.000Z',
+  },
+  {
+    id: 2,
+    category: 'Transport',
+    amount: 18000,
+    description: 'Delivery logistics for customer orders',
+    vendor: 'Nairobi Logistics',
+    incurredDate: '2026-09-10T00:00:00.000Z',
+  },
+]
+
+const fallbackSmsLogs = [
+  {
+    id: 1,
+    recipient: 'Muthiga Butchery',
+    phone: '+254712345678',
+    template: 'Your balance is overdue. Please settle your account.',
+    status: 'Queued',
+    sentAt: '2026-09-12T08:30:00.000Z',
+  },
+]
+
 const fallbackSettings = {
   id: 1,
   businessName: 'Vendora',
@@ -194,6 +243,9 @@ let orders = fallbackOrders.map((order) => ({ ...order }))
 let customers = fallbackCustomers.map((customer) => ({ ...customer }))
 let payments = fallbackPayments.map((payment) => ({ ...payment }))
 let cowPurchases = fallbackCowPurchases.map((purchase) => ({ ...purchase }))
+let suppliers = fallbackSuppliers.map((supplier) => ({ ...supplier }))
+let expenses = fallbackExpenses.map((expense) => ({ ...expense }))
+let smsLogs = fallbackSmsLogs.map((log) => ({ ...log }))
 let settings = { ...fallbackSettings }
 
 const addCustomer = (customer) => {
@@ -683,6 +735,86 @@ app.post('/api/cow-purchases', (req, res) => {
 
   cowPurchases = [purchase, ...cowPurchases]
   res.status(201).json(purchase)
+})
+
+app.get('/api/suppliers', (_req, res) => {
+  res.json(suppliers)
+})
+
+app.post('/api/suppliers', (req, res) => {
+  const supplier = {
+    id: Date.now(),
+    name: req.body.name || 'New Supplier',
+    phone: req.body.phone || '',
+    email: req.body.email || '',
+    location: req.body.location || '',
+    status: req.body.status || 'Active',
+  }
+
+  suppliers = [supplier, ...suppliers]
+  res.status(201).json(supplier)
+})
+
+app.get('/api/expenses', (_req, res) => {
+  res.json(expenses)
+})
+
+app.post('/api/expenses', (req, res) => {
+  const expense = {
+    id: Date.now(),
+    category: req.body.category || 'Other',
+    amount: Number(req.body.amount || 0),
+    description: req.body.description || '',
+    vendor: req.body.vendor || '',
+    incurredDate: req.body.incurredDate || new Date().toISOString(),
+  }
+
+  expenses = [expense, ...expenses]
+  res.status(201).json(expense)
+})
+
+app.get('/api/reports/dashboard', (_req, res) => {
+  const totalRevenue = orders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0)
+  const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
+  const outstanding = customers.reduce((sum, customer) => sum + Number(customer.outstandingBalance || 0), 0)
+  const totalCowSpend = cowPurchases.reduce((sum, purchase) => sum + Number(purchase.totalCost || 0), 0)
+
+  res.json({
+    totalCustomers: customers.length,
+    totalRevenue,
+    totalPaid,
+    outstanding,
+    totalCowSpend,
+    openOrders: orders.filter((order) => order.orderStatus !== 'Delivered').length,
+  })
+})
+
+app.get('/api/reports/outstanding', (_req, res) => {
+  const rows = customers.map((customer) => ({
+    name: customer.name,
+    balance: Number(customer.outstandingBalance || 0),
+    status: Number(customer.outstandingBalance || 0) === 0 ? 'Paid' : 'Outstanding',
+  }))
+
+  res.json(rows)
+})
+
+app.get('/api/sms/logs', (_req, res) => {
+  res.json(smsLogs)
+})
+
+app.post('/api/sms/reminders/send', (req, res) => {
+  const log = {
+    id: Date.now(),
+    recipient: req.body.recipient || 'Customer',
+    phone: req.body.phone || '+254700000000',
+    template: req.body.template || 'Payment reminder',
+    status: 'Queued',
+    sentAt: new Date().toISOString(),
+  }
+
+  smsLogs = [log, ...smsLogs]
+  res.status(201).json(log)
 })
 
 app.get('/api/settings', (_req, res) => {

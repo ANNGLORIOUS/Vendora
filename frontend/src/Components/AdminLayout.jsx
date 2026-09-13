@@ -13,6 +13,10 @@ function AdminLayout({ children }) {
     { label: 'Orders', path: '/admin/orders', icon: '🥩' },
     { label: 'Payments', path: '/admin/payments', icon: '💰' },
     { label: 'Cow Purchases', path: '/admin/cows', icon: '🐄' },
+    { label: 'Suppliers', path: '/admin/suppliers', icon: '🏷️' },
+    { label: 'Expenses', path: '/admin/expenses', icon: '🧾' },
+    { label: 'Reports', path: '/admin/reports', icon: '📈' },
+    { label: 'SMS', path: '/admin/sms', icon: '📨' },
     { label: 'Settings', path: '/admin/settings', icon: '⚙️' },
   ]
 
