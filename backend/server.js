@@ -34,7 +34,7 @@ const app = express()
 const PORT = process.env.PORT || 5000
 const { Pool } = pg
 const JWT_SECRET = process.env.JWT_SECRET || 'vendora-dev-secret-change-me'
-const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5434/skybee?schema=public'
+const databaseUrl = process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5434/vendora?schema=public'
 const dbPool = new Pool({ connectionString: databaseUrl })
 
 dbPool.on('error', (error) => {
