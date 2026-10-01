@@ -438,6 +438,15 @@ const upsertCategory = (categoryName, description = '') => {
 
 const ensureCatalogData = async () => {
   try {
+    const categoryCheck = await dbPool.query(`SELECT to_regclass('public."Category"') AS category_exists`)
+    const productCheck = await dbPool.query(`SELECT to_regclass('public."Product"') AS product_exists`)
+    const hasCategoryTable = Boolean(categoryCheck.rows[0]?.category_exists)
+    const hasProductTable = Boolean(productCheck.rows[0]?.product_exists)
+
+    if (!hasCategoryTable || !hasProductTable) {
+      return
+    }
+
     const categoryResult = await dbPool.query('SELECT COUNT(*)::int AS count FROM "Category"')
     if (Number(categoryResult.rows[0].count) === 0) {
       await Promise.all(defaultCatalogCategories.map((category) =>
@@ -455,7 +464,7 @@ const ensureCatalogData = async () => {
       ))
     }
   } catch (error) {
-    console.warn('Catalog seeding failed:', error.message)
+    console.warn('Catalog seeding skipped:', error.message)
   }
 }
 
@@ -1153,6 +1162,15 @@ app.put('/api/settings', requireAuth, requireAdmin, async (req, res) => {
   return res.json(settings)
 })
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Vendora backend running on http://localhost:${PORT}`)
+})
+
+server.on('error', (error) => {
+  if (error.code === 'EADDRINUSE') {
+    console.warn(`Port ${PORT} is already in use. Another Vendora backend instance may already be running.`)
+    return
+  }
+
+  console.error('Server failed to start:', error)
 })

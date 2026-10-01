@@ -3,15 +3,17 @@ import { createContext, useState, useContext } from 'react'
 const AuthContext = createContext()
 const API_BASE = 'http://localhost:5000/api'
 
+const getStoredAdmin = () => {
+  try {
+    const savedAdmin = localStorage.getItem('adminData')
+    return savedAdmin ? JSON.parse(savedAdmin) : null
+  } catch {
+    return null
+  }
+}
+
 export function AuthProvider({ children }) {
-  const [admin, setAdmin] = useState(() => {
-    try {
-      const savedAdmin = localStorage.getItem('adminData')
-      return savedAdmin ? JSON.parse(savedAdmin) : null
-    } catch {
-      return null
-    }
-  })
+  const [admin, setAdmin] = useState(() => getStoredAdmin())
 
   const getAuthHeaders = () => {
     const token = localStorage.getItem('vendoraToken')
@@ -53,8 +55,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('vendoraToken')
   }
 
+  const isAuthenticated = Boolean(localStorage.getItem('vendoraToken') || admin?.role === 'admin')
+
   return (
-    <AuthContext.Provider value={{ admin, login, logout, getAuthHeaders }}>
+    <AuthContext.Provider value={{ admin, login, logout, getAuthHeaders, isAuthenticated }}>
       {children}
     </AuthContext.Provider>
   )

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const API_BASE = 'http://localhost:5000/api'
@@ -9,7 +9,8 @@ function AdminDashboard() {
   const [customers, setCustomers] = useState([])
   const [payments, setPayments] = useState([])
   const [cowPurchases, setCowPurchases] = useState([])
-  const { getAuthHeaders } = useAuth()
+  const { getAuthHeaders, logout } = useAuth()
+  const navigate = useNavigate()
 
   useEffect(() => {
     const fetchData = async () => {
@@ -21,6 +22,12 @@ function AdminDashboard() {
           fetch(`${API_BASE}/cow-purchases`, { headers: getAuthHeaders() }),
         ])
 
+        if ([ordersRes, customersRes, paymentsRes, cowsRes].some((response) => response.status === 401)) {
+          logout()
+          navigate('/admin/login', { replace: true })
+          return
+        }
+
         const [ordersData, customersData, paymentsData, cowsData] = await Promise.all([
           ordersRes.json(),
           customersRes.json(),
@@ -28,22 +35,22 @@ function AdminDashboard() {
           cowsRes.json(),
         ])
 
-        setOrders(ordersData)
-        setCustomers(customersData)
-        setPayments(paymentsData)
-        setCowPurchases(cowsData)
+        setOrders(Array.isArray(ordersData) ? ordersData : [])
+        setCustomers(Array.isArray(customersData) ? customersData : [])
+        setPayments(Array.isArray(paymentsData) ? paymentsData : [])
+        setCowPurchases(Array.isArray(cowsData) ? cowsData : [])
       } catch (error) {
         console.error('Failed to load Vendora dashboard data', error)
       }
     }
 
     fetchData()
-  }, [])
+  }, [getAuthHeaders, logout, navigate])
 
-  const totalRevenue = orders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0)
-  const totalPaid = payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0)
-  const totalOutstanding = customers.reduce((sum, customer) => sum + Number(customer.outstandingBalance || 0), 0)
-  const totalCowSpend = cowPurchases.reduce((sum, purchase) => sum + Number(purchase.totalCost || 0), 0)
+  const totalRevenue = Array.isArray(orders) ? orders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0) : 0
+  const totalPaid = Array.isArray(payments) ? payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0) : 0
+  const totalOutstanding = Array.isArray(customers) ? customers.reduce((sum, customer) => sum + Number(customer.outstandingBalance || 0), 0) : 0
+  const totalCowSpend = Array.isArray(cowPurchases) ? cowPurchases.reduce((sum, purchase) => sum + Number(purchase.totalCost || 0), 0) : 0
 
   const stats = [
     { label: 'Total Customers', value: customers.length.toString(), icon: '👥', color: 'bg-[#e6f0ea] text-[#12372a]' },
