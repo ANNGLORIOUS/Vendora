@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import VendoraLogo from '../Components/VendoraLogo'
 
 function AdminLogin() {
   const [email, setEmail] = useState('')
@@ -39,7 +40,7 @@ function AdminLogin() {
     <div className="flex min-h-screen items-center justify-center bg-[#f8f6ef] px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl border border-[#e7dcc4]">
         <div className="mb-8 text-center">
-          <h1 className="text-3xl font-black tracking-widest text-[#12372a]">VENDORA</h1>
+          <div className="mb-3 flex justify-center"><VendoraLogo /></div>
           <p className="mt-2 text-sm text-[#4b5563]">Business dashboard</p>
         </div>
 

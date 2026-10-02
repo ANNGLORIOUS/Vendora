@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import VendoraLogo from './VendoraLogo'
 
 function AdminLayout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -26,8 +27,8 @@ function AdminLayout({ children }) {
     <div className="flex min-h-screen bg-[#f8f6ef]">
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 overflow-y-auto bg-[#12372a] text-white transition-transform duration-300 md:relative md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="flex items-center justify-between border-b border-[#1f6f4a] px-6 py-4">
-          <Link to="/admin/dashboard" className="flex items-center gap-2 text-xl font-bold tracking-wide">
-            VENDORA
+          <Link to="/admin/dashboard" className="flex items-center gap-2">
+            <VendoraLogo compact />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden">✕</button>
         </div>
@@ -74,6 +75,7 @@ function AdminLayout({ children }) {
           </button>
 
           <div className="flex items-center gap-3">
+            <VendoraLogo compact />
             <h1 className="text-2xl font-bold text-[#12372a]">Business Dashboard</h1>
           </div>
 

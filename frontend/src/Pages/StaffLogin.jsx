@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import VendoraLogo from '../Components/VendoraLogo'
 
 const API_BASE = 'http://localhost:5000/api'
 
@@ -48,8 +49,8 @@ function StaffLogin() {
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl border border-[#e7dcc4]">
         <div className="mb-8 text-center">
           <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#d4a72c]">Staff dashboard</p>
-          <h1 className="mt-3 text-3xl font-black tracking-widest text-[#12372a]">VENDORA</h1>
-          <p className="mt-2 text-sm text-[#4b5563]">Operations access</p>
+          <div className="my-2 flex justify-center"><VendoraLogo /></div>
+          <p className="text-sm text-[#4b5563]">Operations access</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

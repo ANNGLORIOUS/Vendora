@@ -669,11 +669,64 @@ app.get('/api/staff/me', requireAuth, requireStaff, async (req, res) => {
 })
 
 app.get('/api/staff/dashboard', requireAuth, requireStaff, async (_req, res) => {
-  const [customerCount, orderCount, paymentTotal] = await Promise.all([
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date()
+  todayEnd.setHours(23, 59, 59, 999)
+
+  const [customerCount, orderCount, paymentTotal, openOrders, recentOrders, pendingOrders, recentPayments, customerList] = await Promise.all([
     prisma.customer.count(),
     prisma.order.count(),
     prisma.payment.aggregate({ _sum: { amount: true } }),
+    prisma.order.count({ where: { orderStatus: { not: 'Delivered' } } }),
+    prisma.order.findMany({
+      take: 5,
+      orderBy: { orderDate: 'desc' },
+      select: {
+        id: true,
+        customerName: true,
+        meatType: true,
+        totalAmount: true,
+        amountPaid: true,
+        balance: true,
+        orderStatus: true,
+        paymentStatus: true,
+        orderDate: true,
+      },
+    }),
+    prisma.order.findMany({
+      where: { OR: [{ orderStatus: 'Pending' }, { orderStatus: 'Confirmed' }, { orderStatus: 'In Transit' }] },
+      take: 5,
+      orderBy: { orderDate: 'desc' },
+    }),
+    prisma.payment.findMany({
+      take: 5,
+      orderBy: { paymentDate: 'desc' },
+      select: {
+        id: true,
+        customerName: true,
+        amount: true,
+        method: true,
+        paymentDate: true,
+      },
+    }),
+    prisma.customer.findMany({
+      take: 5,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        name: true,
+        phone: true,
+        location: true,
+        status: true,
+        outstandingBalance: true,
+      },
+    }),
   ])
+
+  const ordersToday = await prisma.order.count({ where: { orderDate: { gte: todayStart, lte: todayEnd } } })
+  const paymentsToday = await prisma.payment.count({ where: { paymentDate: { gte: todayStart, lte: todayEnd } } })
+  const customersToday = await prisma.customer.count({ where: { createdAt: { gte: todayStart, lte: todayEnd } } })
 
   res.json({
     success: true,
@@ -681,7 +734,20 @@ app.get('/api/staff/dashboard', requireAuth, requireStaff, async (_req, res) => 
       totalCustomers: customerCount,
       totalOrders: orderCount,
       totalPayments: Number(paymentTotal._sum.amount || 0),
-      openOrders: await prisma.order.count({ where: { orderStatus: { not: 'Delivered' } } }),
+      openOrders,
+    },
+    recentOrders,
+    pendingOrders,
+    payments: recentPayments,
+    customers: customerList,
+    todayActivity: [
+      { label: 'Orders logged', value: ordersToday },
+      { label: 'Payments received', value: paymentsToday },
+      { label: 'New customers', value: customersToday },
+    ],
+    permissions: {
+      allowed: ['Orders', 'Customers', 'Payments', "Today's activity", 'Pending orders', 'Quick actions'],
+      restricted: ['Business Settings', 'Financial configuration', 'User management', 'Sensitive reports'],
     },
   })
 })
@@ -1059,7 +1125,7 @@ app.delete('/api/discounts/:id', (req, res) => {
   res.json({ success: true })
 })
 
-app.get('/api/customers', requireAuth, requireAdmin, async (_req, res) => {
+app.get('/api/customers', requireAuth, requireStaff, async (_req, res) => {
   try {
     const rows = await prisma.customer.findMany({ orderBy: { createdAt: 'desc' } })
     return res.json(rows)
@@ -1069,7 +1135,7 @@ app.get('/api/customers', requireAuth, requireAdmin, async (_req, res) => {
   }
 })
 
-app.post('/api/customers', requireAuth, requireAdmin, async (req, res) => {
+app.post('/api/customers', requireAuth, requireStaff, async (req, res) => {
   const { name, contactPerson, phone, location, status } = req.body
 
   const customer = {
@@ -1175,7 +1241,7 @@ app.put('/api/orders/:id/status', requireAuth, requireAdmin, async (req, res) =>
   return res.json(order)
 })
 
-app.get('/api/payments', requireAuth, requireAdmin, async (_req, res) => {
+app.get('/api/payments', requireAuth, requireStaff, async (_req, res) => {
   try {
     const rows = await prisma.payment.findMany({ orderBy: { createdAt: 'desc' } })
     return res.json(rows)
@@ -1225,7 +1291,7 @@ app.post('/api/transactions/adjustments', requireAuth, requireAdmin, async (req,
   }
 })
 
-app.post('/api/payments', requireAuth, requireAdmin, async (req, res) => {
+app.post('/api/payments', requireAuth, requireStaff, async (req, res) => {
   const { orderId, customerName, amount, paymentDate, method, notes } = req.body
   const payment = {
     id: Date.now(),
