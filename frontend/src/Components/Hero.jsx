@@ -1,4 +1,4 @@
-import vendoraLogo from '../assets/vendora-logo.svg'
+import vendoraLogo from '../assets/logovendora.png'
 
 function Hero() {
   const highlights = ['Beauty essentials', 'Desk picks', 'Drinkware']
@@ -13,7 +13,7 @@ function Hero() {
                 <img
                   src={vendoraLogo}
                   alt="Vendora logo"
-                  className="w-full max-w-190 object-contain drop-shadow-[0_12px_26px_rgba(0,0,0,0.16)]"
+                  className="h-auto w-full max-w-80 object-contain drop-shadow-[0_12px_26px_rgba(0,0,0,0.16)] sm:max-w-96"
                 />
 
                 <p className="mt-4 text-lg font-semibold uppercase tracking-[0.32em] text-(--brand-900) sm:text-xl">

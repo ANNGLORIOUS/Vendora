@@ -1,7 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import { useCart } from '../context/CartContext'
 import { useAuth } from '../context/AuthContext'
-import vendoraLogo from '../assets/vendora-logo.svg'
+import vendoraLogo from '../assets/logovendora.png'
 
 function Navbar() {
   const { itemCount } = useCart()
@@ -11,7 +11,7 @@ function Navbar() {
     <header className="sticky top-0 z-50 border-b border-black/10 bg-[#f7d45d]/90 backdrop-blur">
       <div className="mx-auto flex w-full max-w-350 items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <Link to="/" className="flex items-center gap-3">
-          <img src={vendoraLogo} alt="Vendora logo" className="h-14 w-auto max-w-52 object-contain" />
+          <img src={vendoraLogo} alt="Vendora logo" className="h-14 w-14 object-contain" />
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm font-semibold uppercase tracking-[0.24em] text-(--text-soft) md:flex">
