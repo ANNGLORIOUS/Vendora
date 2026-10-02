@@ -13,6 +13,11 @@ import AdminExpenses from './Pages/AdminExpenses'
 import AdminReports from './Pages/AdminReports'
 import AdminSms from './Pages/AdminSms'
 import AdminSettings from './Pages/AdminSettings'
+import CustomerLogin from './Pages/CustomerLogin'
+import CustomerPortal from './Pages/CustomerPortal'
+import StaffLogin from './Pages/StaffLogin'
+import StaffDashboard from './Pages/StaffDashboard'
+import StaffProtectedRoute from './Components/StaffProtectedRoute'
 
 function App() {
   return (
@@ -20,6 +25,10 @@ function App() {
       <Route path="/" element={<Navigate to="/admin/login" replace />} />
       <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
       <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/staff" element={<Navigate to="/staff/login" replace />} />
+      <Route path="/staff/login" element={<StaffLogin />} />
+      <Route path="/customer" element={<Navigate to="/customer/login" replace />} />
+      <Route path="/customer/login" element={<CustomerLogin />} />
 
       <Route
         path="/admin/*"
@@ -43,6 +52,20 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      <Route
+        path="/staff/*"
+        element={
+          <StaffProtectedRoute>
+            <Routes>
+              <Route path="/dashboard" element={<StaffDashboard />} />
+              <Route path="*" element={<Navigate to="/staff/dashboard" replace />} />
+            </Routes>
+          </StaffProtectedRoute>
+        }
+      />
+
+      <Route path="/customer/*" element={<CustomerPortal />} />
 
       <Route path="*" element={<Navigate to="/admin/login" replace />} />
     </Routes>

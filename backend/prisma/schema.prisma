@@ -20,6 +20,9 @@ model Customer {
   updatedAt        DateTime @updatedAt
 
   orders           Order[]
+  customerUser     CustomerUser?
+  invoices         Invoice[]
+  adjustments      TransactionAdjustment[]
 }
 
 model Order {
@@ -91,4 +94,72 @@ model AdminUser {
   name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model StaffUser {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("staff")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CustomerUser {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  password    String
+  name        String
+  companyName String?
+  customerId  Int?     @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+}
+
+model Supplier {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  phone              String?
+  email              String?
+  location           String?
+  status             String   @default("Active")
+  lastDeliveryAt     DateTime?
+  totalPurchases     Int      @default(0)
+  outstandingBalance Int      @default(0)
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model Invoice {
+  id            Int      @id @default(autoincrement())
+  invoiceNumber  String   @unique
+  customerId    Int?
+  customerName  String
+  amount        Int
+  status        String   @default("Unpaid")
+  dueDate       DateTime?
+  issueDate     DateTime @default(now())
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+}
+
+model TransactionAdjustment {
+  id          Int      @id @default(autoincrement())
+  customerId  Int?
+  invoiceId   Int?
+  type        String
+  amount      Int
+  reason      String
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  customer Customer? @relation(fields: [customerId], references: [id])
 }

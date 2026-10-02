@@ -45,7 +45,7 @@ app.use(cors())
 app.use(express.json())
 app.use('/uploads', express.static(uploadDir))
 
-const generateToken = (admin) => jwt.sign({ id: admin.id, email: admin.email, role: 'admin' }, JWT_SECRET, { expiresIn: '12h' })
+const generateToken = (user, role = 'admin') => jwt.sign({ id: user.id, email: user.email, role }, JWT_SECRET, { expiresIn: '12h' })
 
 const requireAuth = (req, res, next) => {
   const authHeader = req.headers.authorization || ''
@@ -67,6 +67,22 @@ const requireAuth = (req, res, next) => {
 const requireAdmin = (req, res, next) => {
   if (!req.user || req.user.role !== 'admin') {
     return res.status(403).json({ success: false, message: 'Admin access required', code: 'FORBIDDEN' })
+  }
+
+  return next()
+}
+
+const requireStaff = (req, res, next) => {
+  if (!req.user || (req.user.role !== 'staff' && req.user.role !== 'admin')) {
+    return res.status(403).json({ success: false, message: 'Staff access required', code: 'FORBIDDEN' })
+  }
+
+  return next()
+}
+
+const requireCustomer = (req, res, next) => {
+  if (!req.user || req.user.role !== 'customer') {
+    return res.status(403).json({ success: false, message: 'Customer access required', code: 'FORBIDDEN' })
   }
 
   return next()
@@ -217,6 +233,10 @@ const fallbackSuppliers = [
     email: 'orders@machakosfarmers.co.ke',
     location: 'Machakos',
     status: 'Active',
+    totalPurchases: 18,
+    outstandingBalance: 120000,
+    lastDeliveryAt: '2026-09-28T08:00:00.000Z',
+    notes: 'Primary beef supplier for Nairobi accounts',
   },
   {
     id: 2,
@@ -225,6 +245,10 @@ const fallbackSuppliers = [
     email: 'info@kajiadolivestock.co.ke',
     location: 'Kajiado',
     status: 'VIP',
+    totalPurchases: 11,
+    outstandingBalance: 75000,
+    lastDeliveryAt: '2026-09-18T10:30:00.000Z',
+    notes: 'Long-term livestock partner with premium quality',
   },
 ]
 
@@ -277,6 +301,41 @@ let suppliers = fallbackSuppliers.map((supplier) => ({ ...supplier }))
 let expenses = fallbackExpenses.map((expense) => ({ ...expense }))
 let smsLogs = fallbackSmsLogs.map((log) => ({ ...log }))
 let settings = { ...fallbackSettings }
+let invoices = [
+  {
+    id: 1,
+    invoiceNumber: 'VND-INV-1001',
+    customerId: 1,
+    customerName: 'Muthiga Butchery',
+    amount: 18900,
+    status: 'Unpaid',
+    dueDate: '2026-10-10T00:00:00.000Z',
+    issueDate: '2026-09-30T00:00:00.000Z',
+    notes: 'Lapsed invoice requiring follow-up',
+  },
+  {
+    id: 2,
+    invoiceNumber: 'VND-INV-1002',
+    customerId: 2,
+    customerName: 'Kisumu Meat Hub',
+    amount: 12480,
+    status: 'Paid',
+    dueDate: '2026-10-05T00:00:00.000Z',
+    issueDate: '2026-09-25T00:00:00.000Z',
+    notes: 'Settled via bank transfer',
+  },
+]
+let adjustments = [
+  {
+    id: 1,
+    customerId: 1,
+    invoiceId: 1,
+    type: 'refund',
+    amount: 1200,
+    reason: 'Short delivery deduction',
+    notes: 'Customer credited for late-weight variance',
+  },
+]
 
 const seedVendoraDefaults = async () => {
   try {
@@ -290,6 +349,16 @@ const seedVendoraDefaults = async () => {
         where: { email: 'admin@skybee.co' },
         update: { name: 'Vendora Admin', password: 'admin123' },
         create: { email: 'admin@skybee.co', password: 'admin123', name: 'Vendora Admin' },
+      }),
+      prisma.staffUser.upsert({
+        where: { email: 'staff@vendora.co' },
+        update: { name: 'Vendora Staff', password: 'staff123', role: 'staff' },
+        create: { email: 'staff@vendora.co', password: 'staff123', name: 'Vendora Staff', role: 'staff' },
+      }),
+      prisma.customerUser.upsert({
+        where: { email: 'customer@vendora.co' },
+        update: { name: 'Demo Customer', password: 'customer123', companyName: 'Muthiga Butchery' },
+        create: { email: 'customer@vendora.co', password: 'customer123', name: 'Demo Customer', companyName: 'Muthiga Butchery' },
       }),
     ])
 
@@ -359,6 +428,40 @@ const seedVendoraDefaults = async () => {
           totalCost: Number(purchase.totalCost || 0),
           weightKg: Number(purchase.weightKg || 0),
           notes: purchase.notes || '',
+        })),
+      })
+    }
+
+    const supplierCount = await prisma.supplier.count()
+    if (supplierCount === 0) {
+      await prisma.supplier.createMany({
+        data: fallbackSuppliers.map((supplier) => ({
+          name: supplier.name,
+          phone: supplier.phone || null,
+          email: supplier.email || null,
+          location: supplier.location || null,
+          status: supplier.status || 'Active',
+          totalPurchases: Number(supplier.totalPurchases || 0),
+          outstandingBalance: Number(supplier.outstandingBalance || 0),
+          notes: supplier.notes || null,
+          lastDeliveryAt: supplier.lastDeliveryAt ? new Date(supplier.lastDeliveryAt) : null,
+        })),
+      })
+    }
+
+    const invoiceCount = await prisma.invoice.count()
+    if (invoiceCount === 0) {
+      const customer = await prisma.customer.findFirst({ where: { name: 'Muthiga Butchery' } })
+      await prisma.invoice.createMany({
+        data: invoices.map((invoice) => ({
+          invoiceNumber: invoice.invoiceNumber,
+          customerId: invoice.customerId ?? customer?.id ?? null,
+          customerName: invoice.customerName,
+          amount: Number(invoice.amount || 0),
+          status: invoice.status || 'Unpaid',
+          dueDate: invoice.dueDate ? new Date(invoice.dueDate) : null,
+          issueDate: invoice.issueDate ? new Date(invoice.issueDate) : new Date(),
+          notes: invoice.notes || null,
         })),
       })
     }
@@ -487,7 +590,7 @@ app.get('/api/auth/me', requireAuth, requireAdmin, (req, res) => {
   })
 })
 
-app.post('/api/auth/login', async (req, res) => {
+const handleAdminLogin = async (req, res) => {
   const { email, password } = req.body
   const normalizedEmail = String(email || '').trim().toLowerCase()
 
@@ -517,10 +620,187 @@ app.post('/api/auth/login', async (req, res) => {
   }
 
   return res.status(401).json({ success: false, message: 'Invalid credentials' })
-})
+}
+
+app.post('/api/auth/login', handleAdminLogin)
+app.post('/api/admin/login', handleAdminLogin)
 
 app.post('/api/auth/logout', (_req, res) => {
   res.json({ success: true, message: 'Logged out successfully' })
+})
+
+app.post('/api/staff/login', async (req, res) => {
+  const { email, password } = req.body
+  const normalizedEmail = String(email || '').trim().toLowerCase()
+
+  try {
+    const staff = await prisma.staffUser.findFirst({ where: { email: normalizedEmail } })
+    if (staff && staff.password === String(password || '')) {
+      const token = generateToken({ id: staff.id, email: staff.email }, 'staff')
+      return res.json({
+        success: true,
+        token,
+        staff: { id: staff.id, email: staff.email, name: staff.name, role: 'staff' },
+      })
+    }
+  } catch (error) {
+    console.warn('Staff login lookup failed:', error.message)
+  }
+
+  if (normalizedEmail === 'staff@vendora.co' && String(password || '') === 'staff123') {
+    const token = generateToken({ id: 1, email: normalizedEmail }, 'staff')
+    return res.json({
+      success: true,
+      token,
+      staff: { id: 1, email: normalizedEmail, name: 'Vendora Staff', role: 'staff' },
+    })
+  }
+
+  return res.status(401).json({ success: false, message: 'Invalid staff credentials' })
+})
+
+app.get('/api/staff/me', requireAuth, requireStaff, async (req, res) => {
+  const staff = await prisma.staffUser.findUnique({ where: { id: req.user.id } }).catch(() => null)
+  if (!staff) {
+    return res.json({ success: true, staff: { id: req.user.id, email: req.user.email, name: 'Vendora Staff', role: 'staff' } })
+  }
+
+  return res.json({ success: true, staff: { id: staff.id, email: staff.email, name: staff.name, role: 'staff' } })
+})
+
+app.get('/api/staff/dashboard', requireAuth, requireStaff, async (_req, res) => {
+  const [customerCount, orderCount, paymentTotal] = await Promise.all([
+    prisma.customer.count(),
+    prisma.order.count(),
+    prisma.payment.aggregate({ _sum: { amount: true } }),
+  ])
+
+  res.json({
+    success: true,
+    summary: {
+      totalCustomers: customerCount,
+      totalOrders: orderCount,
+      totalPayments: Number(paymentTotal._sum.amount || 0),
+      openOrders: await prisma.order.count({ where: { orderStatus: { not: 'Delivered' } } }),
+    },
+  })
+})
+
+app.post('/api/customer/auth/login', async (req, res) => {
+  const { email, password } = req.body
+  const normalizedEmail = String(email || '').trim().toLowerCase()
+
+  try {
+    const customer = await prisma.customerUser.findFirst({ where: { email: normalizedEmail } })
+    if (customer && customer.password === String(password || '')) {
+      const token = generateToken({ id: customer.id, email: customer.email }, 'customer')
+      return res.json({
+        success: true,
+        token,
+        customer: {
+          id: customer.id,
+          email: customer.email,
+          name: customer.name,
+          companyName: customer.companyName,
+          role: 'customer',
+        },
+      })
+    }
+  } catch (error) {
+    console.warn('Customer login failed:', error.message)
+  }
+
+  if (normalizedEmail === 'customer@vendora.co' && String(password || '') === 'customer123') {
+    const token = generateToken({ id: 1, email: normalizedEmail }, 'customer')
+    return res.json({
+      success: true,
+      token,
+      customer: {
+        id: 1,
+        email: normalizedEmail,
+        name: 'Demo Customer',
+        companyName: 'Muthiga Butchery',
+        role: 'customer',
+      },
+    })
+  }
+
+  return res.status(401).json({ success: false, message: 'Invalid customer credentials' })
+})
+
+app.get('/api/customer/me', requireAuth, requireCustomer, async (req, res) => {
+  try {
+    const customer = await prisma.customerUser.findUnique({ where: { id: req.user.id } })
+    if (!customer) {
+      return res.status(404).json({ success: false, message: 'Customer profile not found' })
+    }
+
+    return res.json({
+      success: true,
+      customer: {
+        id: customer.id,
+        email: customer.email,
+        name: customer.name,
+        companyName: customer.companyName,
+        role: 'customer',
+      },
+    })
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message })
+  }
+})
+
+app.get('/api/customer/portal', requireAuth, requireCustomer, async (req, res) => {
+  try {
+    const customerUser = await prisma.customerUser.findUnique({
+      where: { id: req.user.id },
+      include: { customer: true },
+    })
+
+    const customerId = customerUser?.customerId ?? null
+    const customerName = customerUser?.companyName || customerUser?.name || 'Customer'
+
+    const customerInvoices = await prisma.invoice.findMany({
+      where: customerId ? { customerId } : { customerName },
+      orderBy: { issueDate: 'desc' },
+    })
+
+    const customerPayments = await prisma.payment.findMany({
+      where: customerId ? { customerName } : { customerName },
+      orderBy: { paymentDate: 'desc' },
+    })
+
+    const summary = {
+      customerName,
+      totalInvoices: customerInvoices.length,
+      paidInvoices: customerInvoices.filter((invoice) => invoice.status === 'Paid').length,
+      totalOutstanding: customerInvoices.reduce((sum, invoice) => sum + (invoice.status === 'Paid' ? 0 : Number(invoice.amount || 0)), 0),
+      totalPayments: customerPayments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
+    }
+
+    return res.json({ success: true, summary, invoices: customerInvoices, payments: customerPayments })
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message })
+  }
+})
+
+app.get('/api/customer/invoices', requireAuth, requireCustomer, async (req, res) => {
+  try {
+    const customerUser = await prisma.customerUser.findUnique({
+      where: { id: req.user.id },
+      include: { customer: true },
+    })
+
+    const customerId = customerUser?.customerId ?? null
+    const customerName = customerUser?.companyName || customerUser?.name || 'Customer'
+    const invoicesList = await prisma.invoice.findMany({
+      where: customerId ? { customerId } : { customerName },
+      orderBy: { issueDate: 'desc' },
+    })
+    return res.json({ success: true, invoices: invoicesList })
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message })
+  }
 })
 
 app.get('/api/products', async (_req, res) => {
@@ -905,6 +1185,46 @@ app.get('/api/payments', requireAuth, requireAdmin, async (_req, res) => {
   }
 })
 
+app.get('/api/transactions/adjustments', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const rows = await prisma.transactionAdjustment.findMany({ orderBy: { createdAt: 'desc' } })
+    return res.json(rows)
+  } catch (error) {
+    return res.json(adjustments)
+  }
+})
+
+app.post('/api/transactions/adjustments', requireAuth, requireAdmin, async (req, res) => {
+  const { customerId, invoiceId, type, amount, reason, notes } = req.body
+  const entry = {
+    id: Date.now(),
+    customerId: customerId ? Number(customerId) : null,
+    invoiceId: invoiceId ? Number(invoiceId) : null,
+    type: type || 'adjustment',
+    amount: Number(amount || 0),
+    reason: reason || 'Manual adjustment',
+    notes: notes || '',
+  }
+
+  try {
+    const saved = await prisma.transactionAdjustment.create({
+      data: {
+        customerId: entry.customerId,
+        invoiceId: entry.invoiceId,
+        type: entry.type,
+        amount: entry.amount,
+        reason: entry.reason,
+        notes: entry.notes,
+      },
+    })
+    adjustments = [entry, ...adjustments]
+    return res.status(201).json(saved)
+  } catch (error) {
+    adjustments = [entry, ...adjustments]
+    return res.status(201).json(entry)
+  }
+})
+
 app.post('/api/payments', requireAuth, requireAdmin, async (req, res) => {
   const { orderId, customerName, amount, paymentDate, method, notes } = req.body
   const payment = {
@@ -1024,11 +1344,16 @@ app.post('/api/cow-purchases', requireAuth, requireAdmin, async (req, res) => {
   }
 })
 
-app.get('/api/suppliers', requireAuth, requireAdmin, (_req, res) => {
-  res.json(suppliers)
+app.get('/api/suppliers', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const rows = await prisma.supplier.findMany({ orderBy: { createdAt: 'desc' } })
+    return res.json(rows)
+  } catch (error) {
+    return res.json(suppliers)
+  }
 })
 
-app.post('/api/suppliers', requireAuth, requireAdmin, (req, res) => {
+app.post('/api/suppliers', requireAuth, requireAdmin, async (req, res) => {
   const supplier = {
     id: Date.now(),
     name: req.body.name || 'New Supplier',
@@ -1036,10 +1361,70 @@ app.post('/api/suppliers', requireAuth, requireAdmin, (req, res) => {
     email: req.body.email || '',
     location: req.body.location || '',
     status: req.body.status || 'Active',
+    outstandingBalance: Number(req.body.outstandingBalance || 0),
+    totalPurchases: Number(req.body.totalPurchases || 0),
+    lastDeliveryAt: req.body.lastDeliveryAt || null,
+    notes: req.body.notes || '',
   }
 
-  suppliers = [supplier, ...suppliers]
-  res.status(201).json(supplier)
+  try {
+    const saved = await prisma.supplier.create({
+      data: {
+        name: supplier.name,
+        phone: supplier.phone || null,
+        email: supplier.email || null,
+        location: supplier.location || null,
+        status: supplier.status,
+        totalPurchases: supplier.totalPurchases,
+        outstandingBalance: supplier.outstandingBalance,
+        lastDeliveryAt: supplier.lastDeliveryAt ? new Date(supplier.lastDeliveryAt) : null,
+        notes: supplier.notes || null,
+      },
+    })
+    suppliers = [supplier, ...suppliers]
+    return res.status(201).json(saved)
+  } catch (error) {
+    suppliers = [supplier, ...suppliers]
+    return res.status(201).json(supplier)
+  }
+})
+
+app.put('/api/suppliers/:id', requireAuth, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id)
+  try {
+    const supplier = await prisma.supplier.update({
+      where: { id },
+      data: {
+        name: req.body.name,
+        phone: req.body.phone,
+        email: req.body.email,
+        location: req.body.location,
+        status: req.body.status,
+        outstandingBalance: Number(req.body.outstandingBalance || 0),
+        totalPurchases: Number(req.body.totalPurchases || 0),
+        lastDeliveryAt: req.body.lastDeliveryAt ? new Date(req.body.lastDeliveryAt) : null,
+        notes: req.body.notes,
+      },
+    })
+    return res.json(supplier)
+  } catch (error) {
+    const current = suppliers.find((item) => item.id === id)
+    const updated = { ...current, ...req.body }
+    suppliers = suppliers.map((item) => item.id === id ? updated : item)
+    return res.json(updated)
+  }
+})
+
+app.delete('/api/suppliers/:id', requireAuth, requireAdmin, async (req, res) => {
+  const id = Number(req.params.id)
+  try {
+    await prisma.supplier.delete({ where: { id } })
+    suppliers = suppliers.filter((item) => item.id !== id)
+    return res.json({ success: true })
+  } catch (error) {
+    suppliers = suppliers.filter((item) => item.id !== id)
+    return res.json({ success: true })
+  }
 })
 
 app.get('/api/expenses', requireAuth, requireAdmin, (_req, res) => {
@@ -1076,6 +1461,42 @@ app.get('/api/reports/dashboard', requireAuth, requireAdmin, (_req, res) => {
   })
 })
 
+app.get('/api/reports/analytics', requireAuth, requireAdmin, async (_req, res) => {
+  const totals = {
+    totalRevenue: orders.reduce((sum, order) => sum + Number(order.totalAmount || 0), 0),
+    totalPaid: payments.reduce((sum, payment) => sum + Number(payment.amount || 0), 0),
+    outstanding: customers.reduce((sum, customer) => sum + Number(customer.outstandingBalance || 0), 0),
+    totalCowSpend: cowPurchases.reduce((sum, purchase) => sum + Number(purchase.totalCost || 0), 0),
+  }
+
+  const revenueSeries = [
+    { label: 'Jan', value: 145000 },
+    { label: 'Feb', value: 168000 },
+    { label: 'Mar', value: 198000 },
+    { label: 'Apr', value: 220000 },
+    { label: 'May', value: 245000 },
+    { label: 'Jun', value: totals.totalRevenue },
+  ]
+
+  const supplierHealth = suppliers.map((supplier) => ({
+    name: supplier.name,
+    purchases: Number(supplier.totalPurchases || 0),
+    outstanding: Number(supplier.outstandingBalance || 0),
+    status: supplier.status || 'Active',
+  }))
+
+  res.json({
+    totals,
+    revenueSeries,
+    supplierHealth,
+    paymentStatus: {
+      paid: orders.filter((order) => order.paymentStatus === 'Paid').length,
+      partial: orders.filter((order) => order.paymentStatus === 'Partially Paid').length,
+      outstanding: orders.filter((order) => order.paymentStatus === 'Outstanding').length,
+    },
+  })
+})
+
 app.get('/api/reports/outstanding', requireAuth, requireAdmin, (_req, res) => {
   const rows = customers.map((customer) => ({
     name: customer.name,
@@ -1102,6 +1523,51 @@ app.post('/api/sms/reminders/send', requireAuth, requireAdmin, (req, res) => {
 
   smsLogs = [log, ...smsLogs]
   res.status(201).json(log)
+})
+
+app.get('/api/invoices', requireAuth, requireAdmin, async (_req, res) => {
+  try {
+    const rows = await prisma.invoice.findMany({ orderBy: { issueDate: 'desc' } })
+    return res.json(rows)
+  } catch (error) {
+    return res.json(invoices)
+  }
+})
+
+app.post('/api/invoices', requireAuth, requireAdmin, async (req, res) => {
+  const { customerName, customerId, amount, dueDate, notes } = req.body
+  const invoiceNumber = `VND-${Date.now().toString().slice(-6)}`
+  const invoice = {
+    id: Date.now(),
+    invoiceNumber,
+    customerId: customerId ? Number(customerId) : null,
+    customerName: customerName || 'Walk-in Customer',
+    amount: Number(amount || 0),
+    status: 'Unpaid',
+    dueDate: dueDate || new Date(Date.now() + 86400000 * 7).toISOString(),
+    issueDate: new Date().toISOString(),
+    notes: notes || '',
+  }
+
+  try {
+    const savedInvoice = await prisma.invoice.create({
+      data: {
+        invoiceNumber: invoice.invoiceNumber,
+        customerId: invoice.customerId,
+        customerName: invoice.customerName,
+        amount: invoice.amount,
+        status: invoice.status,
+        dueDate: new Date(invoice.dueDate),
+        issueDate: new Date(invoice.issueDate),
+        notes: invoice.notes || null,
+      },
+    })
+    invoices = [invoice, ...invoices]
+    return res.status(201).json(savedInvoice)
+  } catch (error) {
+    invoices = [invoice, ...invoices]
+    return res.status(201).json(invoice)
+  }
 })
 
 app.get('/api/settings', requireAuth, requireAdmin, async (_req, res) => {

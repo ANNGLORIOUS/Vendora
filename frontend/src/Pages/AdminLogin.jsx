@@ -89,6 +89,20 @@ function AdminLogin() {
             Email: admin@vendora.co<br />
             Password: admin123
           </p>
+          <button
+            type="button"
+            onClick={() => navigate('/customer/login')}
+            className="mt-4 w-full rounded-lg border border-[#12372a] px-4 py-2 text-sm font-semibold text-[#12372a] hover:bg-[#f8f6ef]"
+          >
+            Open customer portal
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/staff/login')}
+            className="mt-3 w-full rounded-lg border border-[#d4a72c] px-4 py-2 text-sm font-semibold text-[#12372a] hover:bg-[#f8f6ef]"
+          >
+            Open staff dashboard
+          </button>
         </div>
       </div>
     </div>
