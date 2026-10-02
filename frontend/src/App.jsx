@@ -17,7 +17,13 @@ import CustomerLogin from './Pages/CustomerLogin'
 import CustomerPortal from './Pages/CustomerPortal'
 import StaffLogin from './Pages/StaffLogin'
 import StaffDashboard from './Pages/StaffDashboard'
+import StaffOrders from './Pages/StaffOrders'
+import StaffCustomers from './Pages/StaffCustomers'
+import StaffPayments from './Pages/StaffPayments'
+import StaffToday from './Pages/StaffToday'
+import StaffPending from './Pages/StaffPending'
 import StaffProtectedRoute from './Components/StaffProtectedRoute'
+import StaffLayout from './Components/StaffLayout'
 
 function App() {
   return (
@@ -57,10 +63,17 @@ function App() {
         path="/staff/*"
         element={
           <StaffProtectedRoute>
-            <Routes>
-              <Route path="/dashboard" element={<StaffDashboard />} />
-              <Route path="*" element={<Navigate to="/staff/dashboard" replace />} />
-            </Routes>
+            <StaffLayout>
+              <Routes>
+                <Route path="/dashboard" element={<StaffDashboard />} />
+                <Route path="/orders" element={<StaffOrders />} />
+                <Route path="/customers" element={<StaffCustomers />} />
+                <Route path="/payments" element={<StaffPayments />} />
+                <Route path="/today" element={<StaffToday />} />
+                <Route path="/pending" element={<StaffPending />} />
+                <Route path="*" element={<Navigate to="/staff/dashboard" replace />} />
+              </Routes>
+            </StaffLayout>
           </StaffProtectedRoute>
         }
       />
